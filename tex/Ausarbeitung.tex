@@ -12,7 +12,22 @@
 \usepackage{amssymb}
 \usepackage{floatflt}
 
+% provides font selecting commands 
+\usepackage{xunicode} 
 
+% provides unicode character macros 
+\usepackage{xltxtra} 
+
+% provides some fixes/extras 
+\usepackage{pdfsync}
+
+%\defaultfontfeatures{Scale=MatchLowercase ,Mapping=tex-text} %\setromanfont{Charis SIL} 
+%\setsansfont{Gill Sans} 
+%\setmonofont{Pragmata}
+
+%\newfontfamily\secfont{Charis SIL}
+
+%\setkomafont{sectioning}{\secfont}
 
 %\input{nomenclature}
 
@@ -26,7 +41,8 @@
 \begin{titlepage}
 \vspace*{2cm}
 \begin{center}
-\textbf{\huge Untersuchung und Implementierung von Algorithmen zur Zerlegung großer Zahlen}\\
+\textbf{\huge Untersuchung und Implementierung von Algorithmen
+	zur Zerlegung großer Zahlen}\\
 \vspace*{0.5cm}
 \begin{Large}
 \textbf{>>Primfaktorzerlegung<<\\}
