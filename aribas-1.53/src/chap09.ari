@@ -1,0 +1,40 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 9
+** Pseudo-Zufalls-Generatoren
+*)
+(*--------------------------------------------------*)
+var
+    RandSeed: integer;
+end;
+(*--------------------------------------------------*)
+function inirand(seed: integer): integer;
+external
+    RandSeed: integer;
+begin
+    RandSeed := bit_and(seed,0xFF_FFFF_FFFF);
+    return RandSeed;
+end;
+(*--------------------------------------------------*)
+function nextrand(): integer;
+external
+    RandSeed: integer;
+const
+    alfa = 31459265;
+    beta = 2718281;
+var
+    x: integer;
+begin
+    x := RandSeed*alfa + beta;
+    RandSeed := bit_and(x,0xFF_FFFF_FFFF);
+    return bit_shift(RandSeed,-8);
+end;
+(*--------------------------------------------------*)
+function rand(N: integer): integer;
+begin
+    return nextrand() mod N;
+end;
+(*--------------------------------------------------*)

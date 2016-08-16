@@ -1,0 +1,154 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 2
+** Die Grundrechnungsarten
+*)
+(*-------------------------------------------------------------------*)
+(*
+** Zurueckfuehrung der Addition von nicht-negativen ganzen Zahlen
+** auf Bit-Operationen
+*)
+function add(x,y: integer): integer;
+var
+    x0: integer;
+begin
+    while y > 0 do
+        x0 := x;
+        x := bit_xor(x,y);
+        y := bit_shift(bit_and(x0,y),1);
+    end;
+    return x;
+end.
+(*-------------------------------------------------------------------*)
+(*
+** Version von add mit Ausgabe der Zwischen-Ergebnisse
+** in Basis 2 Darstellung
+*)
+function add_verbose(x,y: integer): integer;
+var
+    x0, N: integer;
+begin
+    N := max(bit_length(x),bit_length(y)) + 1;
+    while y > 0 do
+        writeln(x:base(2):digits(N));
+        writeln(y:base(2):digits(N));
+        writeln();
+        x0 := x;
+        x := bit_xor(x,y);
+        y := bit_shift(bit_and(x0,y),1);
+    end;
+    writeln(x:base(2):digits(N));
+    return x;
+end.
+(*-------------------------------------------------------------------*)
+(*
+** Zurueckfuehrung der Multiplikation ganzer Zahlen 
+** auf Additionen und Bit-Operationen.
+** Die Faktoren werden als nicht-negativ vorausgesetzt.
+*)
+function mult(x,y: integer): integer;
+var
+    z: integer;
+begin
+    z := 0;
+    while y > 0 do
+        if odd(y) then
+            z := z + x;
+        end;
+        x := bit_shift(x,1);
+        y := bit_shift(y,-1);
+    end;
+    return z;
+end.
+(*-------------------------------------------------------------------*)
+(*
+** Zurueckfuehrung der ganzzahligen Division auf Additionen,
+** Subtraktionen und Bit-Operationen.
+** Die Argumente werden als nicht-negativ vorausgesetzt.
+*)
+function divide(x,y: integer): array[2] of integer;
+var
+    quot, b: integer;
+begin
+    quot := 0; b := 1;
+    while y < x do
+        y := bit_shift(y,1);
+        b := bit_shift(b,1);
+    end;
+    while b > 0 do
+        if x >= y then
+            x := x - y;
+            quot := quot + b;
+        end;
+        y := bit_shift(y,-1);
+        b := bit_shift(b,-1);
+    end;
+    return (quot, x);
+end.
+(*-------------------------------------------------------------------*)
+(*
+** Schneller Algorithmus fuer die Potenzierung
+** Der Exponent n wird als nicht-negativ vorausgesetzt
+*)
+function power(x,n: integer): integer;
+var
+    k, pow: integer;
+begin
+    if n = 0 then return 1; end;
+    pow := x;
+    for k := bit_length(n)-2 to 0 by -1 do
+        pow := pow * pow;
+        if bit_test(n,k) then
+            pow := pow * x;
+        end;
+    end;
+    return pow;
+end.
+(*-------------------------------------------------------------------*)
+(*
+** Algorithmus fuer die ganzzahlige Quadratwurzel mittels
+** Newton-Verfahren.
+** Falls der Radikand a, der als nicht-negativ vorausgesetzt wird,
+** sehr gross ist, sind die gewaehlten Anfangswerte x, y 
+** fuer die Iteration unguenstig. Fuer eine bessere Wahl siehe rt1
+*)
+function rt(a: integer): integer;
+var
+    x,y: integer;
+begin
+    x := a; y := 1;
+    while x > y do
+        x := (x+y) div 2;
+        y := a div x;
+    end;
+    return x;
+end.
+(*-------------------------------------------------------------------*)
+(*
+** Verbesserte Fassung von rt durch bessere Wahl der Anfangswerte
+** fuer die Iteration
+** Bemerkung: Auch als eingebaute ARIBAS-Funktion
+** mit dem Namen  isqrt  vorhanden.
+*)
+function rt1(a: integer): integer;
+var
+    x,y,n: integer;
+begin
+    if a < 0 then
+        writeln("error");
+        writeln("square root: radicand must be non-negative: ",a);
+        return 0;
+    end;
+    n := bit_length(a);
+    x := bit_shift(1,(n+1) div 2);
+    y := a div x;
+    while x > y do
+        x := (x+y) div 2;
+        y := a div x;
+    end;
+    return x;
+end.
+(*-------------------------------------------------------------------*)

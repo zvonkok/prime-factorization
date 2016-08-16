@@ -1,0 +1,537 @@
+ARIBAS(1)                                               ARIBAS(1)
+
+
+NAME
+       aribas - Multiprecision Arithmetic Interpreter
+
+
+SYNOPSIS
+       aribas [options] [<ari-file> [<arg1> <arg2> ...]]
+
+       This  man  page  was  written for Debian since the orginal
+       software did not contain a man page.
+
+
+DESCRIPTION
+       Aribas is an  interactive  interpreter  suitable  for  big
+       integer   arithmetic  and  multiprecision  floating  point
+       arithmetic.  It has a syntax similar  to  Pascal  or  Mod­
+       ula-2,  but  contains also features from other programming
+       languages like C, Lisp, Oberon.
+
+
+USAGE
+       The simplest way to use aribas is as a calculator for (big
+       integer)  arithmetic. After aribas is started, it displays
+       a prompt ==> and is ready to accept  input.  Simply  enter
+       the  expression  you want to calculate, followed by a full
+       stop, and then press RETURN, for example
+
+           ==> 123 + 456*789.
+
+       Aribas answers
+
+           -: 359907
+
+       The symbol -: introduces the result.
+       IMPORTANT.  To mark the end of your input, you must always
+       type a full stop `.'  and then press RETURN.
+
+       You  can assign the result of a calculation to a variable,
+       as in
+
+           ==> F6 := 2**64 + 1.
+           -: 18446_74407_37095_51617
+
+       This calculates the 6th Fermat number (** denotes exponen­
+       tiation)  and  assigns  it  to  the variable F6 (note that
+       aribas is case sensitive, so this is not the same as  f6).
+       Later you can use this variable for example in the expres­
+       sion
+
+           ==> 123**(F6 - 1) mod F6.
+           -: 688_66214_58712_63971
+
+       which shows (by Fermat's theorem) that F6 is not  a  prime
+       number.
+       The  three  most  recent  results are stored in the pseudo
+       variables _, __, and ___. For example you  can  store  the
+       last result in the variable x by the command
+
+           ==> x := _.
+           -: 688_66214_58712_63971
+
+       As  you  can  see  in  the above examples, aribas uses the
+       underscore _ to structure the output of big  integers  (>=
+       2**32).  Also for input of integers you may use the under­
+       score, the only condition is that immediately  before  and
+       after the underscore there are digits, example:
+
+           ==> z := 123_4567_890.
+           -: 1234567890
+
+       Here the output contains no underscore, which shows that z
+       is less than 2**32.
+
+       Aribas has several built-in functions  for  factorization,
+       for  example rho_factorize, which uses Pollard's rho algo­
+       rithm.
+
+           ==> rho_factorize(F6).
+
+           working ..
+           factor found after 512 iterations
+
+           -: 274177
+
+       To find the remaining cofactor, give the command
+
+           ==> x := F6 div _.
+           -: 6728_04213_10721
+
+       To test whether this factor is prime, Rabin's  probabilis­
+       tic test rab_primetest can be applied:
+
+           ==> rab_primetest(x).
+           -: true
+
+       The  function rho_factorize is good for finding small fac­
+       tors (say up to 10 decimal digits); for  more  complicated
+       factorization  tasks  a  more  powerful algorithm like the
+       quadratic sieve qs_factorize should be used
+
+           ==> qs_factorize(2**128+1).
+
+       (Depending on the power of your computer, it will  take  a
+       few  seconds  up to a few minutes to get a prime factor of
+       the 7th Fermat number.)
+
+
+   Control structures
+       The for loop and the while loop in aribas have a syntax as
+       in  Modula-2.  For example, the following command sequence
+       calculates the factorial of 100.
+
+           ==> x := 1;
+               for i := 2 to 100 do
+                   x := x*i;
+               end;
+               x.
+
+       As you can see in this example, the input may extend  over
+       several lines.
+
+       The  above  for  loop is equivalent to the following while
+       loop
+
+           ==> x := 1; i := 2;
+               while i <= 100 do
+                   x := x*i;
+                   inc(i);
+               end;
+               x.
+
+
+       The branching construct
+       if ...  then ...  elsif ...  else ...  end
+       has also the same syntax as in Modula-2.
+
+   Multiprecision floating point arithmetic
+       Aribas supports different types of floating point  numbers
+       which are internally represented with mantissas of differ­
+       ent bit-length:
+
+               single_float    32 bits
+               double_float    64 bits
+               long_float     128 bits
+
+       and several higher  precisions  up  to  an  implementation
+       dependent limit, typically 1024 or 4096 bits, which can be
+       determined by the function  max_floatprec().  By  default,
+       when  calculating  with  numbers  of  data type real, sin­
+       gle_floats are used. This corresponds to a precision of  9
+       to  10  decimal  places.   A precision of 4096 bits corre­
+       sponds to over 1200 decimal places.
+
+       The precision can be changed using the function set_float­
+       prec.  The  function  takes one integer argument, which is
+       the desired precision in bits. It is automatically rounded
+       to the next higher available value. For example, after
+
+           ==> set_floatprec(100).
+           -: 128
+
+       the  floating point precision is 128 bits and you can cal­
+       culate
+
+           ==> arctan(sqrt(3)).
+           -: 1.04719_75511_96597_74615_42144_61093_16762_8
+
+           ==> _/pi.
+           -: 0.33333_33333_33333_33333_33333_33333_33333_33
+
+
+   User defined functions
+       The user can define his or her own  functions.  A  typical
+       example looks like
+
+           ==> function fac(n: integer): integer;
+               var
+                   x,i: integer;
+               begin
+                   x := 1;
+                   for i := 2 to n do
+                       x := x*i;
+                   end;
+                   return x;
+               end.
+
+       If  you  have  entered  this  correctly, aribas echoes the
+       function name
+
+           -: fac
+
+       and from now on you can use fac  in  the  same  way  as  a
+       built-in function, e.g.
+
+           ==> fac(32).
+           -: 2_63130_83693_36935_30167_21801_21600_00000
+
+       Note  that  inside function definitions all used variables
+       must be explicitly declared, whereas on top level  of  the
+       aribas  interpreter  variables  can  be  simply created by
+       assignments. Here is another  example,  which  shows  some
+       other data types supported by aribas:
+
+           ==> function sqrt_list(n: integer): array of real;
+               var
+                   vec: array[n] of real;
+                   i: integer;
+               begin
+                   for i := 1 to n do
+                       vec[i-1] := sqrt(i);
+                   end;
+                   return vec;
+               end.
+
+       This  function returns an array of the square roots of the
+       integers from 1 to n, for example
+
+           ==> sqrt_list(10).
+           -: (1.00000000, 1.41421356, 1.73205081, 2.00000000,
+           2.23606798, 2.44948974, 2.64575131, 2.82842712, 3.00000000,
+           3.16227766)
+
+       In a bigger programming project  where  you  need  several
+       functions  you would not enter them directly at the aribas
+       prompt but prepare the function definitions with an exter­
+       nal  text  editor and save them in a file  with the exten­
+       sion .ari , for example abcd.ari . This file can  then  be
+       loaded by aribas using the command
+
+           ==> load("abcd").
+
+       If  there  is a syntax error in the file, you get an error
+       message of the form
+
+           error in line <= 23 of loaded file
+           if: end expected
+
+       which tells you (in this example) that there is  an  error
+       in  the  if  construct  in line 23 or earlier in the file.
+       (Note that the error messages are sometimes not very  pre­
+       cise.)  You  can  then correct the error and load the file
+       again.
+
+   Online help
+       The command
+
+           ==> symbols(aribas).
+
+       returns a list of all keywords and names of builtin  func­
+       tions  of  aribas.   This  list has about 180 entries, and
+       begins and ends as follows:
+
+       (ARGV, _, __, ___, abs, alloc, and, arccos,  arcsin,  arc­
+       tan,  arctan2,  aribas,  array, atof, atoi, begin, binary,
+       bit_and, bit_clear, bit_length, ...... , tolower, toupper,
+       transcript,  true, trunc, type, user, var, version, while,
+       write, write_block, write_byte, writeln)
+
+       For most of the symbols in this list, you can get a  short
+       online  help  using  the function help(). For example, the
+       command
+
+           ==> help(ARGV).
+
+       gives an information on the builtin variable ARGV, whereas
+
+           ==> help(while).
+
+       describes  the  syntax of the while loop. If you need more
+       information than that contained in the online  help,  con­
+       sult   the   documentation   which   can   be   found   in
+       /usr/share/doc/aribas.
+
+   How to exit
+       To end an aribas session, type exit at the aribas prompt
+
+           ==> exit
+
+       and then press the RETURN (ENTER) key.
+
+       If you don't want to leave aribas, but want to  break  out
+       of  an infinite loop or a calculation that lasts too long,
+       type CONTROL-C (if you  are  running  aribas  from  within
+       Emacs, you must press CONTROL-C twice). This will (in most
+       cases) stop the current  calculation  and  return  to  the
+       aribas prompt.
+
+       When you are not using the Emacs interface but the command
+       line version of aribas, you sometimes get into the follow­
+       ing situation: Some previous line contains a typing error,
+       but you cannot return to that line to correct it.  In this
+       case  you should simply type a full stop `.' , followed by
+       RETURN. You will get an error message which you can safely
+       ignore,  and a new prompt ==> appears, allowing you to try
+       again.
+
+COMMAND LINE ARGUMENTS
+       aribas [options] [<ari-file> [<arg1> <arg2> ...]]
+
+
+   options
+       The following options are available:
+
+       -q     (quiet mode) Suppresses all messages to the  screen
+              (version no, copyright notice, etc.) when aribas is
+              started
+
+       -v     (verbose mode, default) Does not suppress  messages
+              to the screen when aribas is started.
+
+       -c <cols>
+              aribas  does  its own line breaking when writing to
+              the screen.  Normally it supposes that  the  screen
+              (or  the  window  in  which  aribas  runs)  has  80
+              columns. With the -c option  you  can  set  another
+              number,  which must be between 40 and 160 (in deci­
+              mal  representation).   For  example,  if  you  run
+              aribas  in an Xterm window with 72 columns, use the
+              option -c72 (or -c 72, the space between -c and the
+              number is optional).
+
+       -m <mem>
+              Here  <mem> is a number (in decimal representation)
+              between 64 and 16000.  This  number  indicates  how
+              many  Kilobytes  of  RAM  aribas should use for the
+              aribas heap.  The  default  value  depends  on  the
+              options  used  when aribas was compiled. Typically,
+              under UNIX or LINUX it is 6 Megabytes,  correspond­
+              ing to -m6000
+
+       -h <path of help file>
+              The  online  help  of  aribas  depends  on  a  file
+              aribas.hlp which should be situated  in  the  range
+              of  the  environment  variable PATH. If this is not
+              the case you can specify the exact path of the help
+              file  with  the  -h option. If for example the file
+              aribas.hlp is in the directory /usr/local/lib,  use
+              the option -h /usr/local/lib (the space after -h is
+              not necessary).  The -h option can also be used  if
+              the  help  file  has  a different name. If the help
+              file is named help-aribas and lies in the directory
+              /home/joe/ari, use -h/home/joe/ari/help-aribas.
+
+              With  a properly installed Debian package of aribas
+              it should not be necessary to use this option.
+
+       -p <ari-search-path>
+              With this option you can specify a search path  for
+              loading files with aribas source code. <ari-search-
+              path> may be either the (absolute) pathname of  one
+              directory or several pathnames separated by colons.
+              Suppose that you have called aribas with the option
+
+                   -p/usr/local/lib/aribas:~/ari/examples
+
+              and  that your home directory is /home/alice/. Then
+              the command
+
+                   ==> load("factor").
+
+              will search the file factor.ari first in  the  cur­
+              rent    directory,    then    in    the   directory
+              /usr/local/lib/aribas      and      finally      in
+              /home/alice/ari/examples.
+
+
+       -b     Batch  mode when loading an aribas source code file
+              from the command line, see below.
+
+
+       One letter options  which  require  no  arguments  may  be
+       merged, for example
+
+           aribas -q -b
+
+       is equivalent to
+
+           aribas -qb
+
+   Further command line arguments
+       <ari-file>
+              The next command line argument after the options is
+              interpreted as the  name  of  a  file  with  aribas
+              source  code.  If  the  file name has the extension
+              .ari, this extension may be omitted.  The  file  is
+              loaded  as  if  the  command load("<ari-file>") had
+              been given after the start of aribas at the  aribas
+              prompt.  If  the  file  is not found in the current
+              directory it is searched in the directories  speci­
+              fied by the -p option.  If the option -b was given,
+              the file is loaded and executed.  Afterwards aribas
+              exits without showing it's prompt. If the file can­
+              not be  loaded  completely  because  of  an  error,
+              aribas exits immediately after the error message.
+
+       <arg1> <arg2> ...
+              When  further  command  line arguments follow <ari-
+              file>, they are  collected  (as  strings)  together
+              with  <ari-file>  in  the  vector ARGV which can be
+              accessed from within aribas.  Example: If you  call
+              aribas with the command line
+
+                   aribas startup 4536 eisenstein
+
+              and   the   current  directory  contains  the  file
+              startup.ari, then aribas loads it  and  the  vector
+              ARGV has the form
+
+                  ==> ARGV.
+                  -: ("startup", "4536", "eisenstein")
+
+              If  you  need  some arguments as numbers and not as
+              strings, you can transform them by atoi (or  atof);
+              in our example
+
+                  ==> x := atoi(ARGV[1]).
+                  -: 4536
+
+              will  do  it.  The length of the vector ARGV can be
+              determined by length(ARGV).
+
+RUNNING ARIBAS WITHIN EMACS
+       You can run aribas from within Emacs by giving the command
+       (in Emacs' minibuffer)
+
+            M-x run-aribas
+
+       (If  you  don't have a META key, use ESC x instead of M-x)
+       Then aribas will be loaded into an Emacs window with  name
+       *aribas*  and  you  can edit your input to aribas with the
+       usual Emacs commands.
+
+       If your input ends with a full  stop  '.'  and  you  press
+       RETURN,  it  is  sent to aribas.  If however your complete
+       input does not end with  a  full  stop,  (for  example  in
+       response  to a readln), the input is sent to aribas by C-j
+       (Control-j) or C-c RETURN.
+
+       If you want to repeat a previous input,  M-p  (or  ESC  p)
+       cycles  backward through input history, and M-n (or ESC n)
+       cycles forward.
+
+       A Control-C is sent  to  aribas  by  C-c  C-c  (press  C-c
+       twice).
+
+       It  is  also possible to start aribas from Emacs with com­
+       mand line arguments. For this purpose the command
+
+            C-u M-x run-aribas
+
+       has to be given. Then a prompt
+
+            run-aribas: aribas
+
+       appears in the Minibuffer of Emacs and  you  can  complete
+       the command line, for example
+
+            run-aribas: aribas startup 4536 eisenstein
+
+       (see above).
+
+CONFIGURATION FILE
+       Options  for  running aribas can be specified also using a
+       configuration file with name .arirc.  Aribas searches  for
+       a configuration file in the following order:
+
+           1) the current directory
+           2) the home directory of the user
+
+       There  is  a third possibility: You can define an environ­
+       ment variable ARIRC containing the name of the  configura­
+       tion  file (which may be different from .arirc), including
+       the full path.
+
+       In the configuration file you can specify all command line
+       options described above which begin with a - sign, however
+       a separate line must be  used  for  every  single  option.
+       Lines  beginning  with  the character # or empty lines are
+       ignored.  In addition to the options described above,  the
+       configuration  file  may  contain  aribas source code. For
+       this purpose there must be a line reading
+
+       -init
+
+       Then everything after  this  line  is  treated  as  aribas
+       source code and executed when aribas is started.
+       The  existence of a configuration file for aribas does not
+       exclude the possibility to give command line arguments. If
+       an  option  (e.g.  the -m option) is specified both in the
+       configuration file and the command line but with different
+       values,  then  the  specification  at  the command line is
+       valid. Analogously, a -v option on the command line  over­
+       rides  a -q option in the configuration file.  If there is
+       -init code in the configuration  file  and  an  <ari-file>
+       argument  at the command line, then the -init code is exe­
+       cuted first and afterwards the <ari-file>  is  loaded  and
+       its code executed.
+
+
+FILES
+       $ARIRC, .arirc, $HOME/.arirc
+
+              Optional configuration file.
+
+
+ENVIRONMENT VARIABLES
+       $ARIRC Location of the optional configuration file.
+
+
+SEE ALSO
+       emacs(1)
+
+       More  information  on  how  to  use aribas can be found in
+       /usr/share/doc/aribas.
+
+       The  aribas  home   page   is   http://www.mathematik.uni-
+       muenchen.de/~forster/sw/aribas.html.
+
+BUGS
+       Bug reports should be sent by email to
+
+           forster@mathematik.uni-muenchen.de
+
+
+AUTHOR
+       Otto  Forster  <forster@mathematik.uni-muenchen.de> is the
+       author of the aribas program. This man page  was  compiled
+       by Ralf Treinen <treinen@debian.org> from the aribas docu
+       mentation for the Debian package of  aribas,  and  supple­
+       mented by the author.
+
+
+ARIBAS                    February 2001                        
+
+

@@ -1,0 +1,453 @@
+(****************************************************************)
+(*
+** ARIBAS code for
+** several factoring routines for integers
+** author: (C) 2004 Otto Forster 
+**   Email: forster@mathematik.uni-muenchen.de
+**   WWW:   http://www.mathematik.uni-muenchen.de/~forster
+** date of last change: 
+**   2004-07-11
+**
+** This code is placed under the GNU general public licence
+**
+** ---------------------------------------------------------
+** The factoring algorithms
+**     p1_factorize, pp1_factorize, EC_factor, EC_factorize
+** as well as the ARIBAS builtin functions
+**     rho_factorize, ec_factorize, cf_factorize, qs_factorize
+** should be applied only to numbers which are not prime.
+** This can be tested by rab_primetest or ss_test
+** Also, before applying one of these factoring algorithms,
+** one should first do trial division by small primes,
+** for example using the function factors (below).
+**
+** Example calls:
+**
+** ==> factors(10**15+1).
+** ==> primelist(10**12,1000).
+** ==> p1_factorize(2**67-1).
+** ==> pp1_factorize(2**67-1).
+** ==> EC_factor(2**71-1).
+** ==> EC_factorize(2**256+1,16000,64000,200).
+*)
+(*--------------------------------------------------------------*)
+(*
+** Trial division by primes p < 2**16
+** Writes the found prime divisiors of x to the terminal and
+** returns the last cofactor.
+** If this cofactor is less than 2**32, it is a prime
+*)
+function factors(x: integer)
+var
+    q0, q;
+begin
+    q0 := 2;
+    while q := factor16(x,q0) do
+        writeln(q);
+        x := x div q;
+        q0 := q;
+    end;
+    return(x);
+end;
+(*--------------------------------------------------------*)
+(*
+** Erstellt ein Array von Faktoren von x
+** Alle Elemente, bis auf moeglicherweise das letzte, sind
+** Primfaktoren < 2**16. Ist das letzte Element < 2**32,
+** so ist es ebenfalls prim
+*)
+function factorlist(x: integer): array;
+var
+    st: stack;
+    q: integer;
+begin
+    q := 2;
+    while q := factor16(x,q) do
+        stack_push(st,q);
+        x := x div q;
+    end;
+    stack_push(st,x);
+    return stack2array(st);
+end;
+(*--------------------------------------------------------------*)
+(*
+** Returns a list of all primes p with
+**      first <= p <= first + range
+** The argument range must satisfy range <= 2**16
+** If only the argument range is not given,
+** range := 1000 by default
+**
+** Example calls: 
+**	primelist(0,100).
+**	primelist(10**6).
+*)
+function primelist(first: integer; range := 1000): array;
+var
+    st: stack;
+    n, last: integer;
+    vec: array;
+begin
+    if range < 0 or range > 2**16 then
+        range := 1000;
+    end;
+    last := first + range;
+    if first <= 2 then
+        stack_push(st,2);
+        n := 3;
+    else
+        n := next_prime(first,0);
+    end;
+    while n <= last do
+        stack_push(st,n);
+        n := next_prime(n+2,0);
+    end;
+    return stack2array(st);
+end.
+(*--------------------------------------------------------------*)
+(*
+** Solovay-Strassen primality test
+** The argument x must be > 2**16
+** This is a probabilistic test:
+** If ss_test(x) returns false, then x is certainly not a prime.
+** If however the result is true, then x is only probably prime.
+** To increase the probabilty, one can repeat the test.
+*)
+function ss_test(x: integer): boolean;
+var
+    b, j, u: integer;
+begin
+    if even(x) then return false end;
+    b := 2 + random(64000);
+    j := jacobi(b,x);
+    u := b ** (x div 2) mod x;
+    if j = 1 and u = 1 then
+        return true;
+    elsif (j = -1) and (u = x-1) then
+        return true;
+    else
+        return false;
+    end;
+end.
+(*--------------------------------------------------------------*)
+(*
+** Product all primes p with B0 < p <= B1
+** and all integers n stisfying isqrt(B0) < n <= isqrt(B1)
+** This function is used by the functions
+** p1_factorize, pp1_factorize und EC_factorize
+*)
+function ppexpo(B0,B1: integer): integer;
+var
+    x, m0, m1, i: integer;
+begin
+    x := 1;
+    m0 := max(2,isqrt(B0)+1); m1 := isqrt(B1);
+    for i := m0 to m1 do
+        x := x*i;
+    end;
+    if odd(B0) then inc(B0) end;
+    for i := B0+1 to B1 by 2 do
+        if prime32test(i) > 0 then x := x*i end;
+    end;
+    return x;
+end;
+(*--------------------------------------------------------*)
+(*
+** Pollard's (p-1)-factoring algorithm
+** In general a prime factor p of x is found, if
+** p-1 is a product of prime powers q**k <= bound
+*)
+function p1_factorize(x: integer; bound := 16000): integer;
+const
+    anz0 = 128;
+var
+    base, d, n, n0, n1, ex: integer;
+begin
+    base := 2 + random(64000);
+    d := gcd(base,x);
+    if d > 1 then
+        return d;
+    end;
+    writeln(); write("working ");
+    for n0 := 0 to bound-1 by anz0 do
+        n1 := min(n0 + anz0, bound);
+        ex := ppexpo(n0,n1);
+        base := base ** ex mod x;
+        write('.'); flush();
+        if base <= 1 then
+            return 0;
+        else
+            d := gcd(base-1,x);
+            if d > 1 then
+                writeln();
+                writeln("factor found with bound ",n1-1)
+                return d;
+            end;
+        end;
+    end;
+    return 0;
+end;
+(*-----------------------------------------------------*)
+(*
+** (p+1)-factoring algorithm
+*)
+function pp1_factorize(x: integer; bound := 16000): integer;
+const
+    anz0 = 128;
+var
+    base, d, n, n0, n1, ex: integer;
+begin
+    base := 2 + random(64000);
+    d := gcd(base,x);
+    if d > 1 then
+        return d;
+    end;
+    writeln();
+    write("working ");
+    for n0 := 0 to bound-1 by anz0 do
+        n1 := min(n0 + anz0, bound);
+        ex := ppexpo(n0,n1);
+        base := mod_coshmult(base,ex,x);
+        write('.'); flush();
+        if base <= 1 then
+            return 0;
+        else
+            d := gcd(base-1,x);
+            if d > 1 then
+                writeln();
+                writeln("factor found with bound ",n1-1)
+                return d;
+            end;
+        end;
+    end;
+    return 0;
+end;
+(*-----------------------------------------------------------------*)
+(*
+** Factoring algorithm with elliptic curves
+** The argument bound is an upper bound for the prime factors
+** of the order of the (randomly chosen) elliptic curve
+** anz is the maximal number of trials
+**
+** This function does not use big prime variation,
+** see EC_factorize
+*)
+function EC_factor(N: integer; bound := 500; anz := 100): integer;
+var
+    k, a, d: integer;
+begin
+    write("working ");
+    for k := 1 to anz do
+        a := random(64000);
+        d := gcd(a*a-4,N);
+        if d = 1 then
+            write('.'); flush();
+            d := ec_fact0(N,a,bound);
+        end;
+        if d > 1 and d < N then return d; end;
+    end;
+    return 0;
+end;
+(*-----------------------------------------------------------------*)
+(*
+** Auxiliary function called by EC_factor
+** 
+** Faktorisierungs-Algorithmus mit der elliptischen Kurve
+**      y*y = x*x*x + a*x*x + x
+** bound ist Schranke fuer die Primfaktoren der Elementezahl
+** der elliptischen Kurve
+*)
+function ec_fact0(N,a,bound: integer): integer;
+const
+    anz0 = 128;
+var
+    x, B0, B1, s, d: integer;
+    xx: array[2];
+begin
+    x := random(N);
+    for B0 := 0 to bound-1 by anz0 do
+        B1 := min(B0+anz0,bound);
+        s := ppexpo(B0,B1);
+        xx := mod_pemult(x,s,a,N);
+        if xx[1] = 0 then
+            d := xx[0];
+            if d > 1 and d < N then
+                writeln(); write("factor found with curve ");
+                writeln("parameter ",a," and bound ",B1);
+            end;
+            return d;
+        else
+            x := xx[0];
+        end;
+    end;
+    return -x;
+end;
+(*--------------------------------------------------------------*)
+(*
+** Big prime variation of EC_factor
+** N is number to be factorized 
+** argument bound is the bound for the small primes and prime powers
+** bound2 is a bound for the big prime variation
+** anz is the maximal number of trials
+**
+** Note: ARIBAS has a builtin function ec_factorize, which is
+** in general faster than EC_factorize
+*)
+function EC_factorize(N: integer; 
+            bound := 2000; bound2 := 16000; anz := 128): integer;
+var
+    k, a, d: integer;
+begin
+    write("working ");
+    for k := 1 to anz do
+        a := random(10**6);
+        d := gcd(a*a-4,N);
+        if d = 1 then
+            write('.'); flush();
+            d := ec_fact0(N,a,bound);
+        end;
+        if d < 0 then
+            write(':'); flush();
+            d := ec_factbpv0(N,a,-d,bound2);
+        end;
+        if d > 1 and d < N then return d; end;
+    end;
+    return 0;
+end;
+(*-------------------------------------------------------------*)
+(*
+** auxiliary function, called by EC_factorize
+*)
+function ec_factbpv0(N,a,x,bound: integer): integer;
+const
+    Maxbound = (15000, 31000, 1000000, 4000000, 10000000);
+    Maxhdiff = (22, 36, 57, 74, 77);
+	(* maximal half difference of consecutive primes *)
+var
+    XX: array of array[2];
+    maxhdiff: integer;
+    c, i, q, k, d: integer;
+    P,Q,R: array[2];
+begin
+    k := length(Maxhdiff) - 1;
+    while k > 0 and bound <= Maxhdiff[k-1] do
+        dec(k);
+    end;
+    bound := min(bound,Maxbound[k]);
+    maxhdiff := Maxhdiff[k];
+    XX := alloc(array,maxhdiff+1,(0,0));
+
+    c := ((x + a)*x + 1)*x mod N;
+    P := (x,1);
+    Q := ecN_dup(N,a,c,P);
+    if Q[1] < 0 then return Q[0]; end;
+    XX[1] := R := Q;
+    for i := 2 to maxhdiff do
+        R := ecN_add(N,a,c,R,Q);
+        if R[1] < 0 then return R[0]; end;
+        XX[i] := R;
+    end;
+    R := ecN_add(N,a,c,P,Q);            (* R = 3*P *)
+    if R[1] < 0 then return R[0]; end;
+    d := 0;
+    q := 3;
+    while q < bound do
+        k := 1; inc(q,2);
+        while prime32test(q) /= 1 do
+            inc(q,2); inc(k);
+        end;
+        R := ecN_add(N,a,c,R,XX[k]);
+        if R[1] < 0 then
+            d := R[0];
+            if d > 1 and d < N then
+                writeln();
+                writeln("factor found with curve parameter ",a,
+                        ", bigprime q = ",q);
+            end;
+            break;
+        end;
+    end;
+    return d;
+end;
+(*--------------------------------------------------------------*)
+(*
+** Addition zweier Punkte P,Q auf der elliptischen Kurve
+**      c*y**2 = x**3 + a*x**2 + x (modulo N)
+** Falls waehrend der Rechnung durch eine nicht zu N teilerfremde
+** Zahl geteilt werden muss, wird ein Paar (d,-1) zurueckgegeben,
+** wobei d ein Teiler von N ist.
+** Sonst Rueckgabe der Summe P+Q = (x,y) mit 0 <= x,y < N.
+*)
+function ecN_add(N,a,c: integer; P,Q: array[2]): array[2];
+var
+    x1,x2,x,y1,y2,y,m: integer;
+begin
+    if P = Q then
+        return ecN_dup(N,a,c,P);
+    end;
+    x1 := P[0]; x2 := Q[0];
+    m := mod_inverse(x2-x1,N);
+    if m = 0 then
+        return (gcd(x2-x1,N),-1);
+    end;
+    y1 := P[1]; y2 := Q[1];
+    m := (y2 - y1)*m mod N;
+    x := (c*m*m - a - x1 - x2) mod N;
+    y := (- y1 - m*(x - x1)) mod N;
+    return (x,y);
+end;
+(*-------------------------------------------------------------*)
+(*
+** Verdopplung eines Punktes P auf der elliptischen Kurve
+**      c*y**2 = x**3 + a*x**2 + x (modulo N)
+** Falls waehrend der Rechnung durch eine nicht zu N teilerfremde
+** Zahl geteilt werden muss, wird ein Paar (d,-1) zurueckgegeben,
+** wobei d ein Teiler von N ist.
+** Sonst Rueckgabe von P+P = (x,y) mit 0 <= x,y < N.
+*)
+function ecN_dup(N,a,c: integer; P: array[2]): array[2];
+var
+    x1,x,y1,y,z,m,Pprim: integer;
+begin
+    x1 := P[0]; y1 := P[1];
+    z := 2*c*y1;
+    m := mod_inverse(z,N);
+    if m = 0 then
+        return (gcd(z,N),-1);
+    end;
+    Pprim := (((3*x1 + 2*a)*x1) + 1) mod N;
+    m := Pprim*m mod N;
+    x := (c*m*m - a - 2*x1) mod N;
+    y := (- y1 - m*(x - x1)) mod N;
+    return (x,y);
+end;
+(*------------------------------------------------------------------*)
+(*
+** Multiplication of a point P on the elliptic curve
+**      c*y**2 = x**3 + a*x**2 + x (modulo N)
+** by an integer s >= 1.
+** If during the calculation a division by a number which is
+** not coprime to N must be performed, the function returns
+** immediately a pair (d,-1), where d is a divisor of N.
+*)
+function ecN_mult(N,a,c: integer; P: array[2]; s: integer): array[2];
+var
+    k: integer;
+    Q: array[2];
+begin
+    if s = 0 then return (0,-1); end;
+    Q := P;
+    for k := bit_length(s)-2 to 0 by -1 do
+        Q := ecN_dup(N,a,c,Q);
+        if Q[1] < 0 then
+            return Q;
+        end;
+        if bit_test(s,k) then
+            Q := ecN_add(N,a,c,Q,P);
+            if Q[1] < 0 then
+                return Q;
+            end;
+        end;
+    end;
+    return Q;
+end;
+(*******************************************************************)

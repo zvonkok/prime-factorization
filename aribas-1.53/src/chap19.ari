@@ -1,0 +1,260 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 19
+** Faktorisierung mit elliptischen Kurven
+*)
+(*-----------------------------------------------------------------*)
+(*
+** berechnet die Ordnung der elliptischen Kurve
+**      y*y = x*x*x + x + b
+** ueber dem Koerper Fp (p Primzahl)
+**
+** Nur fuer kleine Primzahlen p < 10**4 geeignet!
+*)
+function ellorder(b,p: integer): integer;
+var
+    x,N: integer;
+begin
+    N := p + 1;
+    for x := 0 to p-1 do
+        N := N + jacobi(x*x*x + x + b,p);
+    end;
+    return N;
+end;
+(*-----------------------------------------------------------------*)
+(*
+** Zugrunde liegt eine elliptische Kurve c*Y*Y = X*X*X + X + b
+** Gerechnet wird simultan ueber allen Koerpern Fp, wobei
+** p ein Teiler von N ist.
+** Es wird vorausgesetzt, dass gcd(N,6) = 1.
+** Das Argument x ist die x-Koordinate eines Punktes Q = (x,y)
+** auf der elliptischen Kurve.
+** Es wird die x-Koordinate des Punktes S := s*Q berechnet.
+** Falls waehrend der Berechnung ein Nenner auftaucht, der
+** nicht zu N teilerfremd ist, wird das Paar (d, 0) zurueckgegeben,
+** wobei d der gemeinsame Teiler des Nenners mit N ist.
+** Sonst wird das Paar (xS, 1) zurueckgegeben, wobei xS die
+** x-Koordinate des Punktes S ist.
+**
+** Diese Funktion ist analog zur eingebauten ARIBAS-Funktion
+**      mod_pemult(x,s,a,N: integer): array[2];
+** die dasselbe fuer die Kurve c*Y*Y = X*X*X + a*X*X + X durchfuehrt.
+*)
+(*-----------------------------------------------------------------*)
+function ellmult(x,s,b,N: integer): array[2];
+var
+    x1,xold,z,zinv,P1,P1inv,Pprime,mu,k: integer;
+begin
+    if s = 0 then return (0,0); end;
+    x1 := x; z := 1;
+    P1 := (x*x*x + b*x*x + x) mod N;
+    P1inv := mod_inverse(P1,N);
+    if P1inv = 0 then return (gcd(N,P1),0); end;
+    for k := bit_length(s)-2 to 0 by -1 do
+        zinv := mod_inverse(2*z,N);
+        if zinv = 0 then return (gcd(N,2*z),0); end;
+        Pprime := (3*x*x + 2*b*x + 1) mod N;
+        mu := (Pprime * P1inv * zinv) mod N;
+        xold := x;
+        x := (P1*mu*mu - 2*xold) mod N;
+        z := (-z - mu*(x - xold)) mod N;
+        if bit_test(s,k) then
+            mu := mod_inverse(x-x1,N);
+            if mu = 0 then return (gcd(N,x-x1),0); end;
+            mu := mu*(z-1) mod N;
+            x := (P1*mu*mu - x - x1) mod N;
+            z := (-1 - mu*(x - x1)) mod N;
+        end;
+    end;
+    return (x,1);
+end;
+
+function ellmult2(x,s,b,N: integer): array[2];
+var
+    x1,xold,z,zinv,P1,P1inv,Pprime,mu,k: integer;
+begin
+	writeln("s	", s);
+    if s = 0 then return (0,0); end;
+    x1 := x;
+    writeln("x1	",x1 );
+    z := 1;
+    writeln("z	", z);
+    writeln("x*x*x ",(x*x*x));
+    writeln("x*x ",(x*x));
+    writeln("b*x*x ",(b*x*x));    
+    P1 := (x*x*x + b*x*x + x);
+    writeln("P1 ", P1);
+    P1 := P1 mod N;
+    writeln("P1	",P1 );
+    P1inv := mod_inverse(P1,N);
+    writeln("P1inv ", P1inv);
+    if P1inv = 0 then return (gcd(N,P1),0); end;
+    k := bit_length(s);
+    writeln("k	",k );
+    for k := bit_length(s)-2 to 0 by -1 do
+    writeln("k  ",k );
+        zinv := mod_inverse(2*z,N);
+	writeln("zinv ", zinv );
+        if zinv = 0 then return (gcd(N,2*z),0); end;
+	writeln("3*x*x ",(3*x*x));
+	writeln("2*b*x ",(2*b*x));
+        Pprime := (3*x*x + 2*b*x + 1) mod N;
+	writeln(" Pprime", Pprime );
+        mu := (Pprime * P1inv * zinv) mod N;
+	writeln("mu   ",mu );
+        xold := x;
+	writeln("xold   ",xold );
+        x := (P1*mu*mu - 2*xold) mod N;
+	writeln("x  ", x);
+        z := (-z - mu*(x - xold)) mod N;
+	writeln("z ",z );
+        if bit_test(s,k) then
+	writeln("bit_test ", bit_test(s,k));
+		writeln("x  ",x);
+		writeln("x1  ",x1);
+		writeln("x-x1  ",(x-x1));
+            mu := mod_inverse(x-x1,N);
+	    writeln("mu ",mu );
+            if mu = 0 then return (gcd(N,x-x1),0); end;
+            mu := mu*(z-1) mod N;
+	    writeln("mu ", mu);
+            x := (P1*mu*mu - x - x1) mod N;
+	    writeln("x ",x );
+	    
+	    writeln("x1 ",x1 );
+	    writeln("mu ",mu );
+            z := (-1 - mu*(x - x1)) mod N;
+	    writeln("z ", z);
+        end;
+    end;
+    return (x,1);
+end;
+(*--------------------------------------------------------*)
+function ecfactorize(N, bound, anz: integer): integer;
+var
+    k, a, d: integer;
+begin
+    write("working ");
+    for k := 1 to anz do
+        a := random(64000);
+        d := gcd(a*a-4,N);
+        if d = 1 then
+            write('.');
+            d := ec_fact0(N,a,bound);
+        end;
+        if d > 1 and d < N then return d; end;
+    end;
+    return 0;
+end;
+(*--------------------------------------------------------*)
+function ec_fact0(N,a,bound: integer): integer;
+const
+    anz0 = 128;
+var
+    x, B0, B1, s, d: integer;
+    xx: array[2];
+begin
+    x := random(N);
+    for B0 := 0 to bound-1 by anz0 do
+        B1 := min(B0+anz0,bound);
+        s := ppexpo(B0,B1);
+        (*xx := mod_pemult(x,s,a,N);*)
+	write("ellmult x ", x);
+	write(" s ", s);
+	write(" a ", a);
+	writeln(" N", N);
+	xx := ellmult(x,s,a,N);
+	writeln("xx   ",xx);
+        if xx[1] = 0 then
+            d := xx[0];
+            if d > 1 and d < N then
+                writeln(); write("factor found with curve ");
+                writeln("parameter ",a," and bound ",B1);
+            end;
+            return d;
+        else
+            x := xx[0];
+        end;
+    end;
+    return 0;
+end;
+(*--------------------------------------------------------*)
+(*
+** Erstellt ein Array von Faktoren von x
+** Alle Elemente, bis auf moeglicherweise das letzte, sind
+** Primfaktoren < 2**16. Ist das letzte Element < 2**32,
+** so ist es ebenfalls prim
+*)
+function factorlist(x: integer): array;
+var
+    st: stack;
+    q: integer;
+begin
+    q := 2;
+    while q := factor16(x,q) do
+        stack_push(st,q);
+        x := x div q;
+    end;
+    stack_push(st,x);
+    return stack2array(st);
+end;
+(*--------------------------------------------------------*)
+(*
+** Erstellt ein Array aller Primzahlen start <= p <= last
+** Voraussetzung last < 2**32 und last-start <= 10000
+** Beispiel-Aufruf: primelist(10**6,10**6+1000).
+*)
+function primelist(start, last: integer): array;
+var
+     st: stack;
+     n: integer;
+     vec: array;
+begin
+    if last > 2**32 then
+        writeln("upper bound <= 2**32 expected");
+        return ();
+    elsif last - start > 10000 then
+        writeln("interval too big");
+        return ();
+    end;
+    if start <= 2 then
+        stack_push(st,2);
+        n := 3;
+    else
+        n := start;
+        if even(n) then inc(n); end;
+        while not prime32test(n) do inc(n,2); end;
+    end;
+    while n <= last do
+        stack_push(st,n);
+        inc(n,2);
+        while not prime32test(n) do inc(n,2); end;
+    end;
+    return stack2array(st);
+end;
+(*-----------------------------------------------------*)
+(*
+** Produkt aller Primzahlen B0 < p <= B1
+** und aller ganzen Zahlen isqrt(B0) < n <= isqrt(B1)
+** Diese Funktion wird gebraucht von den Funktionen
+** p1_factorize, pp1_factorize und ec_factorize
+*)
+function ppexpo(B0,B1: integer): integer;
+var
+    x, m0, m1, i: integer;
+begin
+    x := 1;
+    m0 := max(2,isqrt(B0)+1); m1 := isqrt(B1);
+    for i := m0 to m1 do
+        x := x*i;
+    end;
+    if odd(B0) then inc(B0) end;
+    for i := B0+1 to B1 by 2 do
+        if prime32test(i) > 0 then x := x*i end;
+    end;
+    return x;
+end;
+(*--------------------------------------------------------*)

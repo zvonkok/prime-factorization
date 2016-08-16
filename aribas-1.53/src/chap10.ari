@@ -1,0 +1,53 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 10
+** Zur Umkehrung des Satzes von Fermat
+*)
+(*------------------------------------------------------------------*)
+(*
+** Schnelle Berechnung der Fibonacci-Zahlen mittels der Formeln
+**      fib(2*n-1) = fib(n)**2 + fib(n-1)**2
+**      fib(2*n)   = fib(n)**2 + 2*fib(n)*fib(n-1)
+*)
+function fib(n: integer): integer;
+var
+    k, x, y, xx, temp: integer;
+begin
+    if n <= 1 then return n end;
+    x := 1; y := 0;
+    for k := bit_length(n)-2 to 0 by -1 do
+        xx := x*x;
+        x := xx + 2*x*y;
+        y := xx + y*y;
+        if bit_test(n,k) then
+            temp := x;
+            x := x + y;
+            y := temp;
+        end;
+    end;
+    return x;
+end.
+(*------------------------------------------------------------------*)
+(*
+** Erstellt ein Array von Faktoren von x
+** Alle Elemente, bis auf moeglicherweise das letzte, sind
+** Primfaktoren < 2**16. Ist das letzte Element < 2**32,
+** so ist es ebenfalls prim
+*)
+function factorlist(x: integer): array;
+var
+    st: stack;
+    q: integer;
+begin
+    q := 2;
+    while q := factor16(x,q) do
+        stack_push(st,q);
+        x := x div q;
+    end;
+    stack_push(st,x);
+    return stack2array(st);
+end;
+(*------------------------------------------------------------------*)

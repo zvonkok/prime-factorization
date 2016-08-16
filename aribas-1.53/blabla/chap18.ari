@@ -1,0 +1,82 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 18
+** Die (p+1)-Faktorisierungs-Methode
+*)
+(*--------------------------------------------------------------*)
+function pp1_factorize(N,bound: integer): integer;
+const
+    anz0 = 128;
+var
+    a, d, n, B0, B1, ex: integer;
+begin
+    a := 2 + random(N-3);
+    if (d := gcd(a*a-1,N)) > 1 then return d end;
+    write("working ");
+    for B0 := 0 to bound-1 by anz0 do
+        B1 := min(B0+anz0, bound);
+        ex := ppexpo(B0,B1);
+        a := mod_coshmult(a,ex,N);
+        if a = 1 then return 0 end;
+        write('.');
+        d := gcd(a-1,N);
+        if d > 1 then
+            writeln();
+            writeln("factor found with bound ",B1);
+            return d;
+        end;
+    end;
+    return 0;
+end;
+(*--------------------------------------------------------------*)
+function ppexpo(B0,B1: integer): integer;
+var
+    x, m0, m1, i: integer;
+begin
+    x := 1;
+    m0 := max(2,isqrt(B0)+1); m1 := isqrt(B1);
+    for i := m0 to m1 do
+        x := x*i;
+    end;
+    if odd(B0) then inc(B0) end;
+    for i := B0+1 to B1 by 2 do
+        if prime32test(i) > 0 then x := x*i end;
+    end;
+    return x;
+end;
+(*--------------------------------------------------------------*)
+function factors(x: integer): integer;
+var
+    q: integer;
+begin
+    q := 2;
+    while q := factor16(x,q) do
+        writeln(q);
+        x := x div q;
+    end;
+    return x;
+end;
+(*--------------------------------------------------------------*)
+(*
+** Erstellt ein Array von Faktoren von x
+** Alle Elemente, bis auf moeglicherweise das letzte, sind
+** Primfaktoren < 2**16. Ist das letzte Element < 2**32,
+** so ist es ebenfalls prim
+*)
+function factorlist(x: integer): array;
+var
+    st: stack;
+    q: integer;
+begin
+    q := 2;
+    while q := factor16(x,q) do
+        stack_push(st,q);
+        x := x div q;
+    end;
+    stack_push(st,x);
+    return stack2array(st);
+end;
+(*--------------------------------------------------------------*)

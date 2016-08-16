@@ -1,0 +1,117 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 23
+** Quadratische Zahlkoerper
+*)
+(*-----------------------------------------------------------*)
+(*
+** Multiplikation im Ring der ganzen Gauss'schen Zahlen
+*)
+function gauss_mult(x,y: array[2]): array[2];
+begin
+    return (x[0]*y[0] - x[1]*y[1], x[1]*y[0] + x[0]*y[1]);
+end;
+(*-----------------------------------------------------------*)
+(*
+** Seien x,y Elemente des Rings der ganzen Gauss'schen Zahlen,
+** y /= 0
+** Es wird eine ganze Gauss'sche Zahl r mit Norm(r) < Norm(y)
+** bestimmt, so dass
+**      x = q*y + r
+** mit einer ganzen Gauss'schen Zahl q
+*)
+function gauss_mod(x,y: array[2]): array[2];
+var
+    z0,z1,q0,q1,u0,u1,N,Nhalf: integer;
+begin
+    N := y[0]*y[0] + y[1]*y[1]; Nhalf := N div 2;
+    z0 := x[0]*y[0] + x[1]*y[1];
+    z1 := x[1]*y[0] - x[0]*y[1];
+    q0 := z0 div N; q1 := z1 div N;
+    if (z0 mod N) > Nhalf then inc(q0) end;
+    if (z1 mod N) > Nhalf then inc(q1) end;
+    u0 := y[0]*q0 - y[1]*q1;
+    u1 := y[0]*q1 + y[1]*q0;
+    return (x[0]-u0, x[1]-u1);
+end;
+(*-----------------------------------------------------------*)
+(*
+** Groesster gemeinsamer Teiler
+** im Ring der ganzen Gauss'schen Zahlen
+*)
+function gauss_gcd(x,y: array[2]): array[2];
+var
+    temp: array[2];
+begin
+    while y /= (0,0) do
+        temp := y;
+        y := gauss_mod(x,y)
+        x := temp;
+    end;
+    return x;
+end;
+(*-----------------------------------------------------------*)
+(*
+** Voraussetzung: p Primzahl mit p = 1 mod 4
+** Berechnet ein Paar (x,y), so dass p = x*x + y*y
+*)
+function p2squaresum(p: integer): array[2];
+var
+    x: integer;
+    xi: array[2];
+begin
+    x := fp_sqrt1(p,-1);
+    xi := gauss_gcd((x,1),(p,0));
+    return (abs(xi[0]),abs(xi[1]));
+end;
+(*-----------------------------------------------------------*)
+(*
+** Quadratwurzel von a mod p
+** Voraussetzung: p ungerade Primzahl = 1 mod 4, jacobi(a,p) = 1.
+*)
+function fp_sqrt1(p,a: integer): integer;
+var
+    b: integer;
+    x: array[2];
+begin
+    b := 1;
+    while jacobi(b*b-a,p) /= -1 do inc(b) end;
+    x := fp2_pow(p, b*b-a, (b,1), (p+1) div 2);
+    return x[0];
+end;
+(*----------------------------------------------------------*)
+(*
+** Multiplikation im Koerper Fp[sqrt D]
+*)
+function fp2_mult(p,D: integer; x,y: array[2]): array[2];
+var
+    z0, z1: integer;
+begin
+    z0 := x[0]*y[0] + D*x[1]*y[1];
+    z1 := x[0]*y[1] + x[1]*y[0];
+    return (z0 mod p, z1 mod p);
+end;
+(*----------------------------------------------------------*)
+(*
+** Potenz x**ex im Koerper Fp(sqrt(D)), jacobi(D,p) = -1
+** Voraussetzung ex >= 0.
+*)
+function fp2_pow(p,D: integer; x: array[2]; N: integer): array[2];
+var
+    i: integer;
+    z: array[2];
+begin
+    if N = 0 then return (1, 0); end;
+    z := x;
+    for i := bit_length(N)-2 to 0 by -1 do
+        z := fp2_mult(p,D,z,z);
+        if bit_test(N,i) then
+            z := fp2_mult(p,D,z,x);
+        end;
+    end;
+    return z;
+end;
+(*----------------------------------------------------------*)

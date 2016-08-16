@@ -1,0 +1,24 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 7
+** Die Saetze von Fermat, Euler und Wilson
+*)
+(*-------------------------------------------------------*)
+function mod_power(x,n,M: integer): integer;
+var
+    k, pow: integer;
+begin
+    if n = 0 then return 1; end;
+    pow := x;
+    for k := bit_length(n)-2 to 0 by -1 do
+        pow := (pow * pow) mod M;
+        if bit_test(n,k) then
+            pow := (pow * x) mod M;
+        end;
+    end;
+    return pow;
+end;
+(*********************************************************)

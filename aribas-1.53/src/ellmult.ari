@@ -1,0 +1,96 @@
+(*-----------------------------------------------------------------*)
+(*
+** Zugrunde liegt eine elliptische Kurve c*Y*Y = X*X*X + X + b
+** Gerechnet wird simultan ueber allen Koerpern Fp, wobei
+** p ein Teiler von N ist.
+** Es wird vorausgesetzt, dass gcd(N,6) = 1.
+** Das Argument x ist die x-Koordinate eines Punktes Q = (x,y)
+** auf der elliptischen Kurve.
+** Es wird die x-Koordinate des Punktes S := s*Q berechnet.
+** Falls waehrend der Berechnung ein Nenner auftaucht, der
+** nicht zu N teilerfremd ist, wird das Paar (d, 0) zurueckgegeben,
+** wobei d der gemeinsame Teiler des Nenners mit N ist.
+** Sonst wird das Paar (xS, 1) zurueckgegeben, wobei xS die
+** x-Koordinate des Punktes S ist.
+**
+** Diese Funktion ist analog zur eingebauten ARIBAS-Funktion
+**      mod_pemult(x,s,a,N: integer): array[2];
+** die dasselbe fuer die Kurve c*Y*Y = X*X*X + a*X*X + X durchfuehrt.
+*)
+(*-----------------------------------------------------------------*)
+function ellmult(x,s,b,N: integer): array[2];
+var
+    x1,xold,z,zinv,P1,P1inv,Pprime,mu,k: integer;
+begin
+    if s = 0 then return (0,0); end;
+    x1 := x; z := 1;
+    P1 := (x*x*x + x + b) mod N;
+    P1inv := mod_inverse(P1,N);
+    if P1inv = 0 then return (gcd(N,P1),0); end;
+    for k := bit_length(s)-2 to 0 by -1 do
+        zinv := mod_inverse(2*z,N);
+        if zinv = 0 then return (gcd(N,2*z),0); end;
+        Pprime := (3*x*x + 1) mod N;
+        mu := (Pprime * P1inv * zinv) mod N;
+        xold := x;
+        x := (P1*mu*mu - 2*xold) mod N;
+        z := (-z - mu*(x - xold)) mod N;
+        if bit_test(s,k) then
+            mu := mod_inverse(x-x1,N);
+            if mu = 0 then return (gcd(N,x-x1),0); end;
+            mu := mu*(z-1) mod N;
+            x := (P1*mu*mu - x - x1) mod N;
+            z := (-1 - mu*(x - x1)) mod N;
+        end;
+    end;
+    return (x,1);
+end;
+
+
+function ellmult2(x,s,b,N: integer): array[2];
+var
+    x1,xold,z,zinv,P1,P1inv,Pprime,mu,k: integer;
+begin
+    if s = 0 then return (0,0); end;
+    x1 := x; z := 1;
+    P1 := (x*x*x + x + b) mod N;
+    P1inv := mod_inverse(P1,N);
+    if P1inv = 0 then return (gcd(N,P1),0); end;
+    for k := bit_length(s)-2 to 0 by -1 do
+        zinv := mod_inverse(2*z,N);
+        if zinv = 0 then return (gcd(N,2*z),0); end;
+        Pprime := (3*x*x + 1) mod N;
+        mu := (Pprime * P1inv * zinv) mod N;
+        xold := x;
+        x := (P1*mu*mu - 2*xold) mod N;
+        z := (-z - mu*(x - xold)) mod N;
+        if bit_test(s,k) then
+            mu := mod_inverse(x-x1,N);
+            if mu = 0 then return (gcd(N,x-x1),0); end;
+            mu := mu*(z-1) mod N;
+            x := (P1*mu*mu - x - x1) mod N;
+            z := (-1 - mu*(x - x1)) mod N;
+        end;
+    end;
+    return (x,1);
+end;
+
+
+
+
+
+function ppexpo(B0,B1: integer): integer;
+var
+    x, m0, m1, i: integer;
+begin
+    x := 1;
+    m0 := max(2,isqrt(B0)+1); m1 := isqrt(B1);
+    for i := m0 to m1 do
+        x := x*i;
+    end;
+    if odd(B0) then inc(B0) end;
+    for i := B0+1 to B1 by 2 do
+        if prime32test(i) > 0 then x := x*i end;
+    end;
+    return x;
+end;

@@ -1,0 +1,383 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+   width="297mm"
+   height="210mm"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:cc="http://web.resource.org/cc/"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   id="svg1061"
+   sodipodi:version="0.32"
+   inkscape:version="0.40"
+   sodipodi:docbase="/home/zvonko/Studienarbeit"
+   sodipodi:docname="matlab-mex.svg">
+  <defs
+     id="defs3">
+    <marker
+       style="overflow:visible;"
+       id="TriangleOutL"
+       refX="0.0"
+       refY="0.0"
+       orient="auto"
+       inkscape:stockid="TriangleOutL">
+      <path
+         transform="scale(0.8)"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt;marker-start:none;"
+         d="M 5.77,0.0 L -2.88,5.0 L -2.88,-5.0 L 5.77,0.0 z "
+         id="path4330"
+         sodipodi:nodetypes="cccc" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.2262228"
+     inkscape:cx="393.39177"
+     inkscape:cy="321.37926"
+     inkscape:current-layer="layer1"
+     showgrid="true"
+     inkscape:grid-bbox="true"
+     inkscape:grid-points="true"
+     inkscape:guide-bbox="true"
+     inkscape:guide-points="true"
+     inkscape:window-width="1083"
+     inkscape:window-height="914"
+     inkscape:window-x="349"
+     inkscape:window-y="39" />
+  <metadata
+     id="metadata4">
+    <rdf:RDF
+       id="RDF5">
+      <cc:Work
+         rdf:about=""
+         id="Work6">
+        <dc:format
+           id="format7">image/svg+xml</dc:format>
+        <dc:type
+           id="type9"
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:#dedede;fill-opacity:1.0000000;stroke:#000000;stroke-width:0.95554173;stroke-linejoin:miter;stroke-miterlimit:4.0000000;stroke-opacity:1.0000000"
+       id="rect4417"
+       width="308.48846"
+       height="460.12473"
+       x="17.716536"
+       y="17.734745" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1.0000000;fill-rule:evenodd;stroke:#000000;stroke-width:0.94654760pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;"
+       id="rect1071"
+       width="256.54199"
+       height="124.28278"
+       x="36.024662"
+       y="53.741192" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1.0000000;fill-rule:evenodd;stroke:#000000;stroke-width:0.94209442pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000"
+       id="rect1693"
+       width="255.51686"
+       height="123.61007"
+       x="36.021881"
+       y="319.48645" />
+    <rect
+       style="fill:none;fill-opacity:0.75000000;fill-rule:evenodd;stroke:#000000;stroke-width:1.6423838pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000"
+       id="rect1694"
+       width="319.76840"
+       height="300.19141"
+       x="413.66373"
+       y="89.572365" />
+    <rect
+       style="fill:#dedede;fill-opacity:1.0000000;fill-rule:evenodd;stroke:#000000;stroke-width:0.58749998;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4.0000000;stroke-opacity:1.0000000"
+       id="rect1695"
+       width="136.84695"
+       height="56.588280"
+       x="397.74200"
+       y="53.443352" />
+    <text
+       xml:space="preserve"
+       style="font-size:12.000000;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1.0000000;stroke:none;stroke-width:1.0000000pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;font-family:Bitstream Vera Sans"
+       x="175.33517"
+       y="323.08615"
+       id="text1697"
+       transform="translate(237.3124,-246.9553)"><tspan
+         sodipodi:role="line"
+         id="tspan1698"
+         x="175.33517"
+         y="323.08615">const mxArray * B</tspan><tspan
+         sodipodi:role="line"
+         id="tspan1700"
+         x="175.33517"
+         y="335.08615">B = prhs[1]</tspan></text>
+    <rect
+       style="fill:#dedede;fill-opacity:1.0000000;fill-rule:evenodd;stroke:#000000;stroke-width:0.46648598pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000"
+       id="rect1702"
+       width="136.84695"
+       height="56.588280"
+       x="379.39297"
+       y="99.315910" />
+    <text
+       xml:space="preserve"
+       style="font-size:12.000000;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1.0000000;stroke:none;stroke-width:1.0000000pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;font-family:Bitstream Vera Sans"
+       x="175.33517"
+       y="323.08615"
+       id="text1703"
+       transform="translate(218.9633,-201.0827)"><tspan
+         sodipodi:role="line"
+         id="tspan1704"
+         x="175.33517"
+         y="323.08615">const mxArray * A</tspan><tspan
+         sodipodi:role="line"
+         id="tspan1706"
+         x="175.33517"
+         y="335.08615">A = prhs[0]</tspan></text>
+    <rect
+       style="fill:#dedede;fill-opacity:1.0000000;fill-rule:evenodd;stroke:#000000;stroke-width:0.53504527;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4.0000000;stroke-opacity:1.0000000"
+       id="rect3579"
+       width="113.50120"
+       height="56.588280"
+       x="398.60886"
+       y="354.59824" />
+    <text
+       xml:space="preserve"
+       style="font-size:12.000000;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1.0000000;stroke:none;stroke-width:1.0000000pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;font-family:Bitstream Vera Sans"
+       x="175.33517"
+       y="323.08615"
+       id="text3580"
+       transform="translate(238.2293,54.19954)"><tspan
+         sodipodi:role="line"
+         id="tspan3581"
+         x="175.33517"
+         y="323.08615">mxArray * D</tspan><tspan
+         sodipodi:role="line"
+         id="tspan3583"
+         x="175.33517"
+         y="335.08615">D = plhs[1]</tspan></text>
+    <rect
+       style="fill:#dedede;fill-opacity:1.0000000;fill-rule:evenodd;stroke:#000000;stroke-width:0.42861710pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000"
+       id="rect3585"
+       width="115.53058"
+       height="56.588280"
+       x="380.26453"
+       y="400.47079" />
+    <text
+       xml:space="preserve"
+       style="font-size:12.000000;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1.0000000;stroke:none;stroke-width:1.0000000pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;font-family:Bitstream Vera Sans"
+       x="175.33517"
+       y="323.08615"
+       id="text3586"
+       transform="translate(219.8802,100.0721)"><tspan
+         sodipodi:role="line"
+         id="tspan3587"
+         x="175.33517"
+         y="323.08615">mxArray * C</tspan><tspan
+         sodipodi:role="line"
+         id="tspan3589"
+         x="175.33517"
+         y="335.08615">C = plhs[0]</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12.000000;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1.0000000;stroke:none;stroke-width:1.0000000pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;font-family:Bitstream Vera Sans"
+       x="411.8338"
+       y="47.8507"
+       id="text3591"
+       transform="translate(-57.97041,-12.58756)"><tspan
+         sodipodi:role="line"
+         id="tspan3592"
+         x="411.83380"
+         y="47.850700">INPUT</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12.000000;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1.0000000;stroke:none;stroke-width:1.0000000pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;font-family:Bitstream Vera Sans"
+       x="419.98892"
+       y="347.55154"
+       id="text3594"
+       transform="translate(-72.11433,-2.031127)"><tspan
+         sodipodi:role="line"
+         id="tspan3595"
+         x="419.98892"
+         y="347.55154">OUTPUT</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12.000000;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1.0000000;stroke:none;stroke-width:1.0000000pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;font-family:Bitstream Vera Sans"
+       x="73.396126"
+       y="62.122169"
+       id="text3597"
+       transform="translate(-20.34027,17.86115)"><tspan
+         sodipodi:role="line"
+         id="tspan3598"
+         x="73.396126"
+         y="62.122169">Aufruf der MEX-Datei func:</tspan><tspan
+         sodipodi:role="line"
+         id="tspan3606"
+         x="73.396126"
+         y="74.122169"></tspan><tspan
+         sodipodi:role="line"
+         id="tspan3624"
+         x="73.396126"
+         y="86.122169">[C,D] = func(A,B)</tspan><tspan
+         sodipodi:role="line"
+         id="tspan3608"
+         x="73.396126"
+         y="98.122169"></tspan><tspan
+         sodipodi:role="line"
+         id="tspan3610"
+         x="73.396126"
+         y="110.12217">MATLAB übergibt die zwei Variablen</tspan><tspan
+         sodipodi:role="line"
+         id="tspan3612"
+         x="73.396126"
+         y="122.12217">A und B an die MEX-Datei, C und D</tspan><tspan
+         sodipodi:role="line"
+         id="tspan3616"
+         x="73.396126"
+         y="134.12217">sind die Rückgabewerte.</tspan><tspan
+         sodipodi:role="line"
+         id="tspan3614"
+         x="73.396126"
+         y="146.12217"></tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12.000000;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1.0000000;stroke:none;stroke-width:1.0000000pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;font-family:Bitstream Vera Sans"
+       x="48.930748"
+       y="33.579231"
+       id="text3626"
+       transform="translate(-14.67541,1.853834)"><tspan
+         sodipodi:role="line"
+         id="tspan3627"
+         x="48.930748"
+         y="33.579231">MATLAB</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12.000000;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1.0000000;stroke:none;stroke-width:1.0000000pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;font-family:Bitstream Vera Sans"
+       x="480.13297"
+       y="176.29391"
+       id="text3629"
+       transform="translate(-46.09543,2.717919e-7)"><tspan
+         sodipodi:role="line"
+         id="tspan3630"
+         x="480.13297"
+         y="176.29391">func.c</tspan><tspan
+         sodipodi:role="line"
+         id="tspan3632"
+         x="480.13297"
+         y="188.29391"></tspan><tspan
+         sodipodi:role="line"
+         id="tspan3634"
+         x="480.13297"
+         y="200.29391">void mexFunction(int nlhs, mxArray * plhs[], </tspan><tspan
+         sodipodi:role="line"
+         id="tspan3638"
+         x="480.13297"
+         y="212.29391">                             int nrhs, mxArray * prhs[])</tspan><tspan
+         sodipodi:role="line"
+         id="tspan3640"
+         x="480.13297"
+         y="224.29391"></tspan><tspan
+         sodipodi:role="line"
+         id="tspan3642"
+         x="480.13297"
+         y="236.29391">In der Gateway-Routine:</tspan><tspan
+         sodipodi:role="line"
+         id="tspan3644"
+         x="480.13297"
+         y="248.29391"></tspan><tspan
+         sodipodi:role="line"
+         id="tspan3646"
+         x="480.13297"
+         y="260.29391"> - mxArray für die Rückgabewerte erzeugen</tspan><tspan
+         sodipodi:role="line"
+         id="tspan3648"
+         x="480.13297"
+         y="272.29391"> - plhs[0], plhs[1] den Arrays zuweisen</tspan><tspan
+         sodipodi:role="line"
+         id="tspan3656"
+         x="480.13297"
+         y="284.29391">   (plhs[0] zeigen auf die erzeugten Array)</tspan><tspan
+         sodipodi:role="line"
+         id="tspan3650"
+         x="480.13297"
+         y="296.29391"> - mit mxGet die Eingabewerte aus prhs[0],</tspan><tspan
+         sodipodi:role="line"
+         id="tspan3658"
+         x="480.13297"
+         y="308.29391">   prhs[1], ... einlesen</tspan><tspan
+         sodipodi:role="line"
+         id="tspan3652"
+         x="480.13297"
+         y="320.29391"> - computational routine aufrufen</tspan><tspan
+         sodipodi:role="line"
+         id="tspan3654"
+         x="480.13297"
+         y="332.29391">        </tspan></text>
+    <path
+       style="fill:none;fill-opacity:0.75000000;fill-rule:evenodd;stroke:#000000;stroke-width:0.93750000;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4.0000000;stroke-opacity:1.0000000;marker-mid:none;marker-end:url(#TriangleOutL)"
+       d="M 301.64985,105.45023 L 370.37291,105.83046"
+       id="path3663" />
+    <path
+       style="fill:none;fill-opacity:0.75000000;fill-rule:evenodd;stroke:#000000;stroke-width:0.93750000;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4.0000000;stroke-opacity:1.0000000;marker-mid:none;marker-end:url(#TriangleOutL)"
+       d="M 372.04724,399.03472 L 303.32418,399.41495"
+       id="path4392" />
+    <text
+       xml:space="preserve"
+       style="font-size:12.000000;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1.0000000;stroke:none;stroke-width:1.0000000pt;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000;font-family:Bitstream Vera Sans"
+       x="64.221611"
+       y="322.06677"
+       id="text4396"
+       transform="translate(-11.57591,11.66458)"><tspan
+         sodipodi:role="line"
+         id="tspan4397"
+         x="64.221611"
+         y="322.06677"></tspan><tspan
+         sodipodi:role="line"
+         id="tspan4399"
+         x="64.221611"
+         y="334.06677">Nach Aufruf von func Kontrolle</tspan><tspan
+         sodipodi:role="line"
+         id="tspan4401"
+         x="64.221611"
+         y="346.06677">wieder bei MATLAB:</tspan><tspan
+         sodipodi:role="line"
+         id="tspan4403"
+         x="64.221611"
+         y="358.06677"></tspan><tspan
+         sodipodi:role="line"
+         id="tspan4405"
+         x="64.221611"
+         y="370.06677">[C,D] = func(A,B)</tspan><tspan
+         sodipodi:role="line"
+         id="tspan4411"
+         x="64.221611"
+         y="382.06677"></tspan><tspan
+         sodipodi:role="line"
+         id="tspan4413"
+         x="64.221611"
+         y="394.06677">plhs[0] zeigt auf C und</tspan><tspan
+         sodipodi:role="line"
+         id="tspan4415"
+         x="64.221611"
+         y="406.06677">plhs[1] zeigt auf D.</tspan><tspan
+         sodipodi:role="line"
+         id="tspan4407"
+         x="64.221611"
+         y="418.06677"></tspan><tspan
+         sodipodi:role="line"
+         id="tspan4409"
+         x="64.221611"
+         y="430.06677"></tspan></text>
+  </g>
+</svg>

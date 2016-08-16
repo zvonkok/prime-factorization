@@ -1,0 +1,226 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 14
+** Die (p-1)-Faktorisierungs-Methode
+*)
+(*-----------------------------------------------------*)
+(*
+** stellt alle Primfaktoren von x, die kleiner als 2**16 sind,
+** fest und gibt sie aus.
+** Funktionswert: letzter Primfaktor oder letzter Cofaktor
+*)
+function factors(x: integer): integer;
+var
+    q: integer;
+begin
+    q := 2;
+    while q := factor16(x,q) do
+        writeln(q);
+        x := x div q;
+    end;
+    return x;
+end;
+(*--------------------------------------------------------*)
+(*
+** Erstellt ein Array von Faktoren von x
+** Alle Elemente, bis auf moeglicherweise das letzte, sind
+** Primfaktoren < 2**16. Ist das letzte Element < 2**32,
+** so ist es ebenfalls prim
+*)
+function factorlist(x: integer): array;
+var
+    st: stack;
+    q: integer;
+begin
+    q := 2;
+    while q := factor16(x,q) do
+        stack_push(st,q);
+        x := x div q;
+    end;
+    stack_push(st,x);
+    return stack2array(st);
+end;
+(*--------------------------------------------------------*)
+(*
+** Erstellt ein Array aller Primzahlen start <= p <= last
+** Voraussetzung last < 2**32 und last-start <= 10000
+*)
+function primelist(start, last: integer): array;
+var
+     st: stack;
+     n: integer;
+     vec: array;
+begin
+    if last > 2**32 then
+        writeln("upper bound <= 2**32 expected");
+        return ();
+    elsif last - start > 10000 then
+        writeln("interval too big");
+        return ();
+    end;
+    if start <= 2 then
+        stack_push(st,2);
+        n := 3;
+    else
+        n := start;
+        if even(n) then inc(n); end;
+        while not prime32test(n) do inc(n,2); end;
+    end;
+    while n <= last do
+        stack_push(st,n);
+        inc(n,2);
+        while not prime32test(n) do inc(n,2); end;
+    end;
+    return stack2array(st);
+end;
+(*-----------------------------------------------------*)
+(*
+** Produkt aller Primzahlen B0 < p <= B1
+** und aller ganzen Zahlen isqrt(B0) < n <= isqrt(B1)
+** Diese Funktion wird gebraucht von den Funktionen
+** p1_factorize, pp1_factorize und ec_factorize
+*)
+function ppexpo(B0,B1: integer): integer;
+var
+    x, m0, m1, i: integer;
+begin
+    x := 1;
+    m0 := max(2,isqrt(B0)+1); m1 := isqrt(B1);
+    for i := m0 to m1 do
+        x := x*i;
+    end;
+    if odd(B0) then inc(B0) end;
+    for i := B0+1 to B1 by 2 do
+        if prime32test(i) > 0 then x := x*i end;
+    end;
+    return x;
+end;
+(*-----------------------------------------------------*)
+(*
+** p-1-Faktorisierungs-Algorithmus von Pollard
+** Findet i.a. Primfaktoren p von x, wenn p-1 Produkt
+** kleiner Primzahlen q <= bound ist.
+** Fuer einen ersten Versuch bei 30-stelligem x
+** waehle z.B. bound = 16000.
+*)
+function p1_factorize(N,bound: integer): integer;
+const
+    anz0 = 128;
+var
+    base, d, B0, B1, ex: integer;
+begin
+    base := 2 + random(N-2);
+    if (d := gcd(base,N)) > 1 then return d end;
+    write("working ");
+    for B0 := 0 to bound-1 by anz0 do
+        B1 := min(B0+anz0, bound);
+        ex := ppexpo(B0,B1);
+        base := base ** ex mod N;
+        if base = 1 then return 0 end;
+        write('.');
+        d := gcd(base-1,N);
+        if d > 1 then
+            writeln();
+            writeln("factor found with bound ",B1);
+            return d;
+        end;
+    end;
+    return 0;
+end;
+(*-----------------------------------------------------*)
+(*
+** Erzeugt eine Binaerdatei "primdiff.dat" mit den halben
+** Differenzen aufeinander folgender ungerader Primzahlen
+** bis zur Schranke N
+** Schreibt gleichzeitig die Maxima der Differenzen
+** auf den Bildschirm
+*)
+function primdiff(N: integer): integer;
+const
+    DiffFile = "primdiff.dat";
+var
+    f: file;
+    count, prime, prime0, diff, maxdiff: integer;
+begin
+    if not open_write(f,DiffFile,binary) then
+        writeln("unable to open file ",DiffFile);
+    end;
+    prime0 := 3; prime := 5; count := 0; maxdiff := 0;
+    while prime0 <= N do
+        inc(count);
+        diff := prime - prime0;
+        write_byte(f,diff div 2);
+        if diff > maxdiff then
+            maxdiff := diff;
+            writeln(diff:6,": ",prime);
+        end;
+        prime0 := prime; inc(prime,2);
+        while prime32test(prime) = 0 do inc(prime,2); end;
+    end;
+    close(f);
+    return count;
+end;
+(*--------------------------------------------------------*)
+(*
+** (p-1)-Faktorisierung mit big prime variation
+*)
+function p1_factbpv(N,bound1,bound2: integer): integer;
+var
+    base, d, ex, B0: integer;
+begin
+    base := 2 + random(N-2);
+    write("working ");
+    for B0 := 0 to bound1-1 by 256 do
+        ex := ppexpo(B0,min(B0+256,bound1));
+        base := base**ex mod N;
+        d := gcd(base-1,N); write('.');
+        if d > 1 then return d; end;
+    end;
+    if d = 1 then
+        writeln(); write("entering big prime variation ");
+        d := bigprimevar(base,N,bound2);
+    end;
+    return d;
+end;
+(*-----------------------------------------------------*)
+(*
+** Hilfsfunktion fuer p1_factbpv
+** Setzt die Existenz einer Datei "primdiff.dat"
+** mit den halben Differenzen aufeinander folgender
+** ungerader Primzahlen bis 10**6 voraus, die durch
+** den Aufruf primdiff(10**6) erzeugt wird.
+*)
+function bigprimevar(y,N,bound: integer): integer;
+const
+    DiffFile = "primdiff.dat";
+    maxhdiff = 57;
+var
+    X: array[maxhdiff+1];
+    f: file;
+    i, k, y2, q, q0, d, z, count: integer;
+begin
+    X[0] := 1; y2 := y*y mod N;
+    for i := 1 to maxhdiff do X[i] := X[i-1]*y2 mod N; end;
+    bound := min(bound,10**6);
+    if not open_read(f,DiffFile,binary) then
+        writeln("unable to open file ",DiffFile); halt(0);
+    end;
+    q := 3; y := y**q mod N; z := y-1;
+    d := 0; count := 1;
+    while q < bound do
+        k := read_byte(f); q := q + 2*k;
+        y := y*X[k] mod N;
+        z := z*(y-1) mod N;
+        if inc(count) >= 1000 then
+            write('.'); count := 0;
+            d := gcd(z,N);
+            if d > 1 then break; end;
+        end;
+    end;
+    close(f);
+    return d;
+end;
+(*-----------------------------------------------------*)

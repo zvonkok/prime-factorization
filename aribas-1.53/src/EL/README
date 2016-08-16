@@ -1,0 +1,41 @@
+The file aribas.el provides the Emacs interface for ARIBAS
+
+To be able to run ARIBAS from within Emacs, the file aribas.el
+must be in the load-path of Emacs. If this is not the case, you
+can extend the load-path by customizing your .emacs file.
+If for example aribas.el is in the directory /usr/local/lib/aribas,
+then write the following Elisp command into .emacs
+
+	(setq load-path (cons "/usr/local/lib/aribas" load-path))
+
+If aribas.el is in the subdirectory el of your home directory,
+you can write
+
+	(setq load-path (cons (expand-file-name "~/el") load-path))
+
+Furthermore, put the following lines into your .emacs file
+
+	(autoload 'run-aribas "aribas"
+     		"Run ARIBAS." t)
+
+Then, after the next start of Emacs, you can run ARIBAS from within
+Emacs by giving the command
+
+  	M-x run-aribas
+
+(If you don't have a META key, use ESC x instead of M-x)
+Then ARIBAS will be loaded into an Emacs window with name 
+*aribas* and you can edit your input to ARIBAS with the usual
+Emacs commands.
+
+If your input ends with a full stop '.' and you press RETURN,
+it is sent to ARIBAS.
+If however your complete input does not end with a full stop,
+(for example in response to a readln), the input is sent 
+to ARIBAS by C-j (Control-j) or C-c RETURN.
+
+If you want to repeat a previous input, M-p (or ESC p) cycles backward
+through input history, and M-n (or ESC n) cycles forward.
+
+A Control-C is sent to ARIBAS by C-c C-c (press C-c twice).
+

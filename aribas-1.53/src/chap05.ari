@@ -1,0 +1,75 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 5
+** Primfaktor-Zerlegung
+*)
+(*--------------------------------------------------------*)
+(*
+** Sieb des Eratostenes.
+** Das Argument N wird auf das naechst groessere Vielfache
+** von 16 aufgerundet.
+** Die Funktion liefert einen Bitvektor der Laenge N/2,
+** (d.h. einen Byte-String der Laenge N/16),
+** in der das Bit an Position k genau dann gesetzt ist,
+** wenn 2*k+1 eine Primzahl ist.
+*)
+function erat_sieve(N: integer): byte_string;
+var
+    p,k,n: integer;
+    bb: byte_string;
+begin
+    n := (N+15) div 16; N := n*16;
+    bb := alloc(byte_string,n,0xFF);
+    mem_bclear(bb,0);
+    for p := 3 to isqrt(N) by 2 do
+        if mem_btest(bb,p div 2) = 1 then
+            for k := 3*p to N by 2*p do
+                mem_bclear(bb,k div 2);
+            end;
+        end;
+    end;
+    return bb;
+end;
+(*--------------------------------------------------------*)
+(*
+** stellt alle Primfaktoren von x, die kleiner als 2**16 sind,
+** fest und gibt sie aus.
+** Funktionswert: letzter Primfaktor oder letzter Cofaktor
+** Ist dieser < 2**32, so ist er prim
+*)
+function factors(x: integer): integer;
+var
+    q: integer;
+begin
+    q := 2;
+    while q := factor16(x,q) do
+        writeln(q);
+        x := x div q;
+    end;
+    return x;
+end;
+(*--------------------------------------------------------*)
+(*
+** Erstellt ein Array von Faktoren von x
+** Alle Elemente, bis auf moeglicherweise das letzte, sind
+** Primfaktoren < 2**16. Ist das letzte Element < 2**32,
+** so ist es ebenfalls prim
+*)
+function factorlist(x: integer): array;
+var
+    st: stack;
+    q: integer;
+begin
+    q := 2;
+    while q := factor16(x,q) do
+        stack_push(st,q);
+        x := x div q;
+    end;
+    stack_push(st,x);
+    return stack2array(st);
+end;
+(*--------------------------------------------------------------*)
+

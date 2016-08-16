@@ -1,0 +1,73 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 13
+** Die Pollardsche Rho-Methode
+*)
+(*----------------------------------------------------------------*)
+(*
+** Implementierung des Pollardschen Rho-Verfahrens zur Faktorisierung
+** Bemerkung: In ARIBAS als eingebaute Funktion mit dem Namen
+** rho_factorize vorhanden
+*)
+(*----------------------------------------------------------------*)
+(*
+** Versucht, die Zahl N zu faktorisieren. Der Parameter anz
+** ist eine Schranke fuer die Anzahl der Iterationen.
+** Ein Faktor p von N wird im allgemeinen gefunden, falls
+** anz groesser als die Quadratwurzel von p ist.
+*)
+function poll_rho(N,anz: integer): integer;
+const
+    anz0 = 256;
+var
+    x, y, i, d, P: integer;
+begin
+    y := x := random(N);
+    write("working ");
+    for i := 0 to (anz-1) div anz0 do
+        P := accumdiff(x,y,N,anz0);
+        write('.');
+        d := gcd(P,N);
+        if d > 1 and d < N then
+            writeln(); writeln("factor found after ");
+            writeln((i+1)*anz0," iterations");
+            return(d);
+        end;
+    end;
+    return 0;
+end;
+(*----------------------------------------------------------------*)
+function accumdiff(var x,y: integer; N, anz: integer): integer;
+var
+    i, P: integer;
+begin
+    P := 1;
+    for i := 1 to anz do
+        x := (x*x + 2) mod N;
+        y := (y*y + 2) mod N;
+        y := (y*y + 2) mod N;
+        P := P * (y-x) mod N;
+    end;
+    return P;
+end;
+(*----------------------------------------------------------------*)
+function ss_test(N: integer): boolean;
+var
+    a, j, u: integer;
+begin
+    if even(N) then return false end;
+    a := 2 + random(64000);
+    j := jacobi(a,N);
+    u := a ** (N div 2) mod N;
+    if j = 1 and u = 1 then
+        return true;
+    elsif j = -1 and N-u = 1 then
+        return true;
+    else
+        return false;
+    end;
+end;
+(*----------------------------------------------------------------*)

@@ -1,0 +1,389 @@
+Version 1.0: 6/19/05
+	- Increased the precision of the multiple precision library
+		to 125 digits. Also added sieving parameters for 105-125
+		digit inputs. These are not tested at all, but they have 
+		to be better than using the 105-digit parameters everywhere
+	- For 90+ digit inputs, use a trial division cutoff that is larger
+		than the double large prime cutoff. This makes sieving
+		a little slower, but the increase in partial relations found
+		outweighs the slowdown. Assuming that a linear increase in
+		partial relations makes the factorization linearly faster
+		(this may not be true), tuning this step makes factorizations
+		above 90 digits around 5% faster
+	- Added an option to shut down gracefully after a specified 
+		number of minutes
+	- Only squarefree multipliers are allowed
+	- Print the number of bits in all the sieving cutoffs
+	- Added notification to screen if sieving completed
+	- Modified demo.c to not depend on numbers ending in
+		a carriage return when being read in
+	- Fixed a stupid bug generating random seeds in linux;
+		also use /dev/urandom instead of /dev/random
+	- Catch SIGTERM as well as SIGINT
+	- Cleaned up the wording on progress messages; hopefully the
+		new wording won't confuse so many people people about
+		the nature of the relations being collected
+	- Added mp.h back into msieve.h, so that the main structure
+	  	automatically chooses the right size for an mp_t
+	- Added build flags for more platforms to the makefile
+	- Used the types from stdint.h to handle 32-bit vs 64-bit
+	- Munged enough typedefs so things compile on AIX with xlc
+	- Allow a multiplier of 1, even if the input is not 1 mod 4
+	- Increased the trial factoring bound in mp_is_prime to 256
+	- Added code to print the elapsed time even if the run was interrupted
+	- Added readme
+
+Version 0.88: 12/24/04
+	- Moved all the core factorization code into a library and
+		forked off a demo application to call it. Also
+		built a lightweight API that hides the library internals
+	- Encapsulated all the static data needed to perform a factorization
+		into an msieve_obj struct; this removes all dependencies
+		on global variables and makes the factorization library
+		thread-safe
+	- Made logging much more flexible: to file, to screen, both or neither
+	- Removed the need for the roots of the large factor base primes to
+		be in sorted order in one of the inner sieve loops;
+		amazingly, the one branch that implemented the sort
+		took over half the total runtime of poly initialization!
+	- Store the precomputed values for initializing polynomials in
+		two different formats: structure-of-arrays for the small FB
+		primes and array-of-structures for the large FB primes.
+		This makes moderate-size factorizations somewhat faster
+	- Much more paranoia in the choice of random seeds
+	- Reduced the size of a block of work when the L1 cache is smaller;
+		hopefully this will speed up factorizations on Intel CPUs.
+	- Added an extra check that the number of cycles found by the
+		cycle finder not exceed the number of cycles expected.
+		The absence of this check could have caused some 
+		factorizations to crash. This appears to only be an issue
+		with early versions of gcc 4.0.0 (see gcc bugzilla #19050)
+	- Added powers of odd numbers to the list of small multipliers
+		available; no sieving for these numbers is performed, so
+		powers are okay now
+	- Fixed several memory leaks that happen when performing small
+		factorizations in batch mode
+	- Count the number of digits in the input and in any factors found
+	- If sieving is not actually happening when a Ctrl-C occurs,
+		exit immediately
+	- When reading relations from disk, make sure that a relation con-
+		tains at most one -1 factor
+	- Compute the elapsed time if QS is actually needed
+
+Version 0.87: 12/11/04
+	- Modified the sieve code to perform sieving for several
+		polynomials simultaneously, and interleaved polynomial
+		(re)initialization with the sieving. This allows cache 
+		blocking of both the factor base and the sieve interval, 
+		and makes poly initialization take almost zero time.
+		This in turn allows extremely small sieve intervals, allowing
+		smooth relations to be found faster. The end result is
+		a big speedup in the sieve stage, 15-20% at least
+	- Modified the hashtable-based portion of the sieving to generate
+		more efficient compiled code; 1-2% speedup
+	- Changed the savefile format again, to avoid printing out 'b' values
+	- Fixed an extremely subtle bug involving a sieve offset of -1;
+		this is a special case for SIQS but not MPQS
+	- Removed the up-front verification pass; the worst that can
+		happen is that the postprocessing will not find enough
+		valid relations, so you'll just have to sieve some more
+	- Performed an overhaul of out-of-date documentation
+	- Add batch mode (again)
+	- Added a makefile
+	- Consume whitespace before parsing the input number
+	- Correctly factor an input of zero
+
+Version 0.86: 11/29/04
+	- Modified the polynomial generation code to generate 'a'
+		values as close as possible to the theoretical
+		'best' value. Sieving is ~10% faster now, *and*
+		finds more partial relations than before
+	- The calculation of cutoff scores for trial factoring
+		sieve values was completely wrong; it assumed (like
+		QS did) that small sieve offsets yielded small polynomial
+		values. Correcting this removes ~30% of calls to
+		the trial factoring code
+	- Compute the second trial factoring cutoff inside check_sieve_val();
+		this makes it more likely that sieve values near a real
+		root of the MPQS polynomial will not be thrown away
+	- Changed all savefile writes to be manually buffered, so that
+		disk access only happens in large blocks and is explicitly
+		flushed. This *may* solve the mysterious problems people
+		are seeing where relations in a large run get corrupted.
+		It also makes small factorizations run much faster
+	- Added code to verify every relation before sieving starts, and
+		change the filtering stage to recompute numbers of cycles
+		and relations from scratch
+	- Make sure that lists of numbers read from the savefile are
+		sorted in ascending order
+	- Clamped the bound for single large primes at 32 bits. Someday
+		this may become important
+
+Version 0.85: 11/26/04
+	- If any partial relations are duplicates, rebuild the graph
+		of large primes and recompute the expected number of cycles. 
+		This is the only way to survive a large number of duplicates
+	- Slightly modify the cycle-finder to allow quitting even if
+		some partial relations do not participate in cycles
+	- Make sure that relations read from disk do not have too
+		many factors (i.e. are corrupt)
+	- Use the default cache size for the Pentium 4; using the correct
+		cache size for this processor causes performance loss
+	- Print timestamps to stdout and not stderr; apparently I'm the
+		only one who likes seeing timestamps when output is
+		redirected to a file
+	- Print relation counts to stderr, and only print the last progress
+		notification to stdout. This should give a nice capsule
+		description if output is redirected, and keeps thousands
+		of lines of progress notifications out of logs.
+	
+Version 0.84: 11/25/04
+	- Cache-based optimizations: decoupled the small FB size
+		from the sieve block size, made the sieve block size
+		variable, added cache size detection for x86 processors
+		(and hopefully accurate compile directives for PowerPCs)
+	- Change the savefile scheme to only have one output file, containing
+		relations and polynomials mixed together. This greatly
+		simplifies parsing saved data; it also means that savefiles
+		from different runs (or machines!) can be concatenated
+		together and read in all at once. 
+	- Added much more paranoia to the parsing of savefiles
+	- Restart the linear algebra on any error in find_nonsigular_sub();
+		these errors are a consequence of a bad random start
+		point for the matrix code and just need a different
+		start point to work
+	- Added versions of malloc() and free() that align allocated memory
+	- Fix a potential bug in the counting of partial relations just
+		as the filtering stage is starting
+	- Increased the minimum trial factoring bound slightly
+
+Version 0.83: 11/23/04
+	- Fixed a bug in the polynomial generation code that was
+		triggered by the multiplier improvements of 0.82
+
+Version 0.82: 11/22/04
+	- Changed the multiplier computation to use the modified
+		Knuth-Schroeppel algorithm (now that I finally found
+		a paper that describes it)
+	- For diagnostic purposes, print the version and the 
+		seeds for the random number generator 
+	- Remove some debug printouts, fix some typos
+
+Version 0.81: 11/20/04
+	- Added a preprocessing stage to the matrix code to remove
+		singleton rows. This reduces the number of linear
+		algebra failures for small inputs and eliminates
+		(I hope) the inability to find dependencies at all
+		for some factorizations
+	- Restart the Lanczos iteration if not all columns are used
+		between two iteration steps. This saves the program
+		having to be rerun manually
+	- Slightly modified some of the output text
+
+Version 0.8: 11/19/04
+	- Renamed the program to 'msieve'. The 'm' is for 'Michey'
+	- Added double large prime support
+	- Wholesale changes to support checkpoint and restart. Not
+		only does this make things more crashworthy, it 
+		drastically reduces memory consumption
+	- Added block Lanczos for the linear algebra step. The Gauss
+		elimination code was really huffing and puffing for
+		big factorizations, especially since double large primes
+		are making much more dense matrices 
+	- Changed the way polynomials are stored, to reduce memory use
+		during the final stage of factorization
+	- Changed the trial division to use multiplication by
+		reciprocals. This makes the trial division part
+		of checking a sieve value ~20% faster, and is 
+		especially important with double large primes
+		because trial factoring happens much more often
+	- Use built-in tables to compute both the initial trial factoring
+		bound and the factor base bound. This avoids having to
+		guess how many primes the trial factoring will need
+		(previously the number used was a huge overestimate that
+		wasted lots of time)
+	- Moved all code that deals with relations (allocation, freeing,
+		purging, cycle generation) to its own file
+	- Used SQUFOF for inputs 19 digits or less after trial factoring;
+		also fixed a bug in the polynomial selection code that
+		caused 20-22 digit factorizations to needlessly fail
+	- Fixed another bug in the polynomial selection code that only
+		showed up for small factor bases
+	- Collapsed all of the sieve initialization into a single
+		routine again, and performed some long-needed cleanup
+	- Changed the seeding of the random number generator to be different
+		for every invocation of the program
+	- Increased the size limit of an mp_t to 115 digits. It's presuming
+		a bit much, but someone may need the extra room
+	- In the square root phase, if a factor is found and it divides
+		the multiplier then don't print it (it's part of the multiplier)
+	- Fixed a silly bug in mp_bits, for zero inputs
+
+Version 0.7: 10/23/04
+	- Coded up the self-initializing variant of MPQS. 70-digit
+		factorizations are 15% faster, and the speedup climbs
+		to 50% for 90-digit factorizations. This was a lot
+		trickier than I thought. Note that the minimum input
+		size is now around 20 digits
+	- Changed the small prime multiplier computation to penalize
+		larger multipliers. The previous version only looked at
+		the factor base and didn't account for the fact that a
+		larger multiplier meant a larger number to factor
+	- Finally added (basic) parameter tuning based on size of the
+		input number. For smaller factorizations the result is
+		up to twice as fast compared to a single set of parameters;
+		for larger factorizations the difference is smaller
+	- For all factors found, report the factor as prime, composite
+		or probable prime
+	- Removed the floating-point modular inverse. SIQS doesn't
+		need it, and it was pretty kludgy to begin with
+	- Big reorganization of the driver code; added capability to
+		factor multiple integers in batch mode. Also changed
+		the initial factor base calculations to save memory
+	- The linear algebra phase now collects 64 dependencies 
+		instead of 32. This increases the odds of a complete
+		factorization, and the extra overhead of 64-bit arithmetic 
+		on 32-bit platforms should be negligible
+	- Replaced mp_isqrt with mp_iroot, and used the latter to 
+		determine if the input is a perfect power
+	- Added several casts to make the code 64-bit clean
+	- Added a progress notification for every 500 full relations
+		collected (this was long overdue)
+
+Version 0.6: 10/9/04
+	- Another overhaul of the low-level sieving code. This version
+		uses a weird hashtable technique for most of the 
+		factor base primes. The result is a dramatic speedup 
+		in sieving and trial factoring of sieve values, and an 
+		overall speedup of ~30% for 80 digit factorizations
+	- I was wrong in thinking that it wouldn't make any difference
+		to skip sieving with small primes. For 60-80 digit
+		factorizations quite a bit of time is spent in the
+		small prime phase of the sieve, and implementing the
+		small prime variation gives a 5-10% overall speedup
+	- replaced the use of mp_expo_1 in the polynomial initial-
+		ization stage with a custom version that uses floating
+		point. For big factorizations (>60 digits) this more
+		than doubles the speed of the initialization, for an
+		overall speedup approaching 20%
+	- removed the sieve tuning subsystem; it just wasn't working
+		any better than picking a single set of parameters
+		for all factorizations
+	- modified the factor base size calculation and the MPQS
+		poly generation code to handle the case when the
+		number to be factored is very small. The minimum
+		size input for which the MPQS code works is ~12 digits
+	- modified mp_divrem to use mp_divrem_1 whenever possible;
+		this prevents a host of problems with small denominators
+	- modified mp_gcd to use mp_mod_1 whenever possible;
+		this is faster and prevents infinite loops
+	- streamlined handling of the multiplier during the
+		MPQS square root phase
+	- fixed some compiler warnings about improper casts
+	- switched to gcc's built-in prefetch intrinsic
+
+Version 0.5: 7/10/04
+	- massive overhaul of the entire sieving phase, including a
+		top-level code reorganization, removing dependence
+		on hard-coded constants, and multiple efficiency 
+		optimizations. The result is cleaner, more robust,
+		better documented and 20-30% faster
+	- added an experimental tuning phase that estimates the sieving
+		runtime and can in principle choose all sieving parameters
+		simultaneously to optimize the sieving time. In practice
+		it still needs some work.
+	- added multipliers of 2, 6 and 10 to the list of multipliers 
+		available. This required small changes to the MPQS init
+		phase and to the square root phase
+	- fixed several edge conditions in the handling of 0 or 1
+		partial relations, that would otherwise crash
+	- fixed the calculation of new sieve bailout values to avoid
+		an infinite loop when only one more relation was needed
+	- added more sanity-checking when generating random witnesses
+		in mp_is_prime
+	- inlined mp_expo_1 and removed the initial remainder
+		operation, which is unnecessary if the base is
+		about the same size as the modulus. This requires
+		an extra normalization in the third case of 
+		mp_legendre_1, but makes the MPQS initialization 
+		stage slightly faster.
+	- renamed mp_modmul to mp_modmul_1
+	- split out the MPQS square root code into its own file
+
+Version 0.4: 6/10/04
+	- multiple polynomials at last! Even with no tuning, the
+		speedup is incredible (5x for 50 digit numbers,
+		10x for 60-70 digit numbers). The sieve code is simpler,
+		and the trial division code is both simpler and faster.
+	- added multiple-precision versions of mp_expo_1, mp_legendre_1,
+		and mp_modsqrt_1. 
+	- added mp_rand, mp_is_prime, mp_random_prime, mp_next_prime
+	- forced the bound for trial division to a minimum of 10000
+	- bail out if the input number has been completely factored
+		after the trial division phase
+	- fixed a bug in the second case of mp_legendre_1
+	- fixed typos in comments
+
+Version 0.3: 4/13/04
+	- changed the basic sieving routines to use division-free
+		arithmetic. This removes compiler-dependent code,
+		removes artificial limits to the size of the sieving
+		interval, removes the latency of 64-bit division for
+		machines which don't support it directly, and is much
+		faster (~15%) even on x86 machines with hardware
+		64-bit divide.
+	- added L1 and L2 cache blocking to the sieving routines. 
+		Additional 15% speedup
+	- major changes to how trial division on sieve values is performed.
+		This removes the entire multiple-precision library from
+		all critical paths in the program, and makes everything
+		~10% faster. The speedup increases as the numbers to be
+		factored, and the factor base, gets larger
+	- added computation of a small prime multiplier in the initial
+		stages of the program, to optimize the choice
+		of factor bases. This can make a huge difference
+		in performance (I've seen 25% speedups)
+	- forced precompution of all of the primes needed in the 
+		initial stages of the program. This makes trial 
+		division and multiplier selection much faster
+	- forced use of the dense Gaussian solver on any matrix smaller 
+		than a cutoff size, even if the sparse solver can keep going
+	- fixed an initialization bug in mp_mul_1
+	- changed the inline asm for mp_modmul. The original version broke
+		mp_modsqrt_1, which in turn broke (in a very obscure way)
+		the trial division of sieve values
+	- modified a loop bound in build_matrix to avoid a buffer overrun
+		when the number of relations is much larger than required
+	- moved freeing of the sieve array to point after its last use,
+		instead of at the end of the program
+	- added code to sort the factors found into ascending order; 
+		otherwise compiler and OS specific details of qsort 
+		cause the factors to be printed out in a different 
+		order on different machines
+	- packed several code groups in the square root phase
+		into loops (makes for cleaner code)
+
+Version 0.2: 3/29/04
+	- fixed a silly bug that threw away half the depen-
+		dencies in the square root phase
+	- modified division routine to compute quotient
+		correctly when num is larger than square
+		of denom
+	- used fixed division routine to make GCDs hugely
+		faster when one operand is much smaller than
+		the other
+	- used faster GCDs to print out only prime factors
+		that the program finds (rather than products of
+		two or more prime factors)
+	- included test that number to be factored is not 
+		a perfect square
+	- modified gcc inline assembly to put condition 
+		codes in the clobber list
+	- fixed many compiler warnings
+	- used __inline for VC++
+	- included some more header files to avoid
+		missing function prototypes
+	- cleaned up some typos in source code comments
+
+Version 0.1: 3/24/04
+	Initial release

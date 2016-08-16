@@ -1,0 +1,382 @@
+MSIEVE: A Library for Factoring Large Integers
+Jason Papadopoulos (jasonp@boo.net)
+6/19/05
+
+
+Introduction
+------------
+
+Msieve is the result of my efforts to understand how integers are
+factored using the quadratic sieve algorithm. After all the pieces fell
+into place and the code started working, the goal changed from building
+working quadratic sieve code to building *the best possible* quadratic
+sieve code. I don't claim that I've succeeded, but I am happy with where
+I ended up.
+
+This documentation corresponds to version 1.0 of the Msieve library. Do not
+expect to become a factoring expert just by reading it. I've included a
+relatively complete list of references that you can and should look up if
+you want to treat the code as more than a black box to solve your factoring
+problems.
+
+
+What Msieve Does
+----------------
+
+Factoring is the study (half math, half engineering, half art form) of 
+taking big numbers and expessing them as the product of smaller numbers. 
+If I find out 15 = 3 * 5, I've performed an integer factorization on the 
+number 15. As the number to be factored becomes larger, the difficulty 
+involved in completing its factorization explodes, to the point where you 
+can invent secret codes that depend on the difficulty of factoring and 
+reasonably expect your encrypted data to stay safe.
+
+There are plenty of algorithms for performing integer factorization. All
+have a preferred size of number they are best at factoring, and all of them
+have plenty of implementations available. Msieve is no exception: it can with
+high probability find the complete factorization of any input number up to
+about 125 digits in size. Trial division is used on all inputs; if the result
+is less than 19 digits in size, SQUFOF is used. If over 19 digits or if SQUFOF
+fails, the code proceeds directly to the quadratic sieve.
+
+In factoring jargon, Msieve is an implementation of the self-initializing
+multiple polynomial quadratic sieve (MPQS) with double large primes. Msieve 
+was written with several other goals in mind:
+
+	- To be as fast as possible. I claim (without proof) that for 
+	  completely factoring general inputs between 40 and 100 digits 
+	  in size, Msieve is faster than any other code implementing any 
+	  other algorithm. I realize that's a tall order, and that I'll 
+	  probably have to eat those words, but a *lot* of effort has gone 
+	  into making Msieve fast.
+
+	- To be as portable as possible. The code is written in C and is 
+	  completely self contained. It has its own basic multiple precision 
+	  library (which can be used in other applications) and is written 
+	  in as machine-independent a manner as possible. I've verified that 
+	  the source code compiles and runs correctly on 32- or 64-bit Intel 
+	  x86, 32- and 64-bit PowerPC, and 64-bit Alpha platforms. It's 
+	  reported to work in 32-bit mode on the RS6000. It works in Windows, 
+	  Linux (several flavors), Mac OS X, and AIX. Pretty much the only 
+	  requirement for building the code is that your compiler have a 
+	  native 64-bit data type.
+
+	- To be simple to use. The only input is the integer to be factored.
+	  Everything else happens automatically.
+
+	- To be free (as in beer). The entire code base is released into the
+	  public domain. This is hobby stuff for me, and the more it's used
+	  the better.
+
+If you choose to use Msieve, please let me know how it goes. I welcome bug
+reports, suggestions, optimizations, ports to new platforms, complaints,
+boasts, whatever.
+
+
+Getting Msieve
+--------------
+
+The latest version of Msieve can be found on my web page, www.boo.net/~jasonp.
+A precompiled Windows binary using the latest source (optimized for the AMD 
+athlon processor) is also available there.
+
+The source distribution comes with a Makefile you can use if you want to build
+msieve from source. If you have Microsoft Visual Studio, just pull all the
+source files into a little project and build. If it doesn't Just Work, I 
+definitely want to know.
+
+
+Using Msieve
+------------
+
+Just to be confusing, there are two things that I call 'Msieve' interchangeably.
+The source distribution builds a self-contained static library 'libmsieve.a',
+that actually performs factorizations, and also builds a 'msieve' demo
+application that uses the library. The library has a very lightweight inter-
+face defined in msieve.h, and can be used in other applications. While the
+demo application is (slightly) multithreaded, the library is single-threaded
+(in fact, all of its state is passed in, so the library is completely
+thread-safe).
+
+The demo application has only one job: to act as a delivery vehicle for 
+integers to be factored. Numbers can come from a text file, from redirected
+input, from the command line directly, or can be manually typed in one at a
+time. Batch input is also supported, so that you can just point the application
+to a text file with a collection of numbers, one per line. By default, all
+output goes to a logfile and a summary goes to the screen. For the complete
+list of options, try 'msieve -h'.
+
+While factoring an integer, the library can produce a very large amount of
+intermediate information. This information is stored in an auxiliary savefile,
+and the savefile can be used to restart an interrupted factorization. Note that
+factoring one integer and then another integer will overwrite the savefile 
+from the first integer.
+
+The amount of memory that's needed will depend on the size of the number to
+be factored. The requirements increase towards the end of a factorization, when
+all of the intermediate results are needed at the same time. For a 100-digit
+factorization, most of the time Msieve needs 55-65MB of memory, with the
+last stage of the factorization needing 100-130MB. Larger factorizations
+would need more memory than this, but not significantly more.
+
+Distributed Computing
+---------------------
+
+By default, the demo application will keep going until all integers given to
+it have been factored. If you happen to have several computers available and
+need to factor a really big integer, it is possible to get all of the 
+computers to work on factorizing the same number. This process is not automated
+and is a little labor-intensive, so don't be surprised if it turns out to be
+somewhat inconvienient. That's the price you pay for 1) keeping the code and
+the user interface simple but 2) finishing your factorization much faster.
+
+Before giving you recipes for 'going distributed', you have to know in general
+terms how the quadratic sieve works. This is not the place to explain that
+in detail (the references do it much better than I can) but you'll be a lot
+less confused if you grasp the following facts:
+
+	1. The quadratic sieve is a fast way of finding 'relations'.
+	   A relation is a statement about the number you want to factor.
+
+	2. A single relation is theoretically capable of factoring your
+	   number. In practice that's impossible; the best you can do
+	   is find a lot of different relations that fail. For a really 
+	   big number, you'll need millions of these relations. The process
+	   of finding relations is called 'sieving'.
+
+	3. Once you have 'enough' of these relations, you can take the
+	   millions of relations and combine them together into
+	   a few dozen super-relations that *are* capable of finishing the
+	   factorization with high probability.
+	
+	4. You don't know beforehand how many relations will be 'enough'. 
+	   If you already have a collection of relations, you can use some 
+	   math to determine whether there are 'enough' relations in that 
+	   collection.
+
+	5. The more sieving you do, the more relations you'll find. A block
+	   of sieving work will produce an approximately constant number of
+	   relations. So every computer you use for sieving will accumulate
+	   relations at a constant rate. Obviously, the faster the computer
+	   the higher the constant rate.
+
+So (at least from low earth orbit) the quadratic sieve is divided into
+two phases, the 'sieving' phase and the 'combining' phase. For msieve, the
+combining phase takes a few minutes at most, but the sieving phase can take 
+days or weeks. It's the sieving phase we want to do in parallel. We have to
+keep sieving until all of the computers involved have produced a total of
+'enough' unique relations.
+
+Now that the preliminaries are out of the way, here are the recipes for
+going distributed:
+
+RECIPE 1:
+   1. Start msieve on each sieving machine
+   2. Every so often (say, once a day):
+        - stop msieve on each sieving machine
+	- combine the savefiles from all the sieving machines into
+	  a single 'super-savefile'. Leave the savefiles from the
+	  sieving machines alone otherwise
+	- start one copy of msieve from the super-savefile. If it
+	  finds there are 'enough' relations, then it will automatically
+	  start the combining phase. 
+	- If there are not 'enough' relations, the one copy of msieve
+	  will start sieving again. Stop it, delete the super-savefile,
+	  and repeat step 1.
+
+RECIPE 2 (less data transfer):
+   1. Start msieve on each sieving machine
+   2. Every so often (say, once a day):
+        - stop msieve on each sieving machine
+	- APPEND the savefiles from all the sieving machines into
+	  the existing 'super-savefile', then delete the savefiles 
+	  from the sieving machines
+	- start one copy of msieve from the super-savefile. If it
+	  finds there are 'enough' relations, then it will automatically
+	  start the combining phase. 
+	- If there are not 'enough' relations, the one copy of msieve
+	  will start sieving again. Stop it and repeat step 1. Do not
+	  delete the super-savefile
+
+Some notes on these recipes:
+
+1. The copies of msieve that are sieving do not need to know about each other.
+   Each one uses random numbers to begin the sieving process, and it's
+   essentially impossible that two sieving machines will produce the same
+   output by accident. Even if they did, the combining phase will notice
+   and will remove the duplicates.
+
+2. Each copy of msieve will give a running progress report of how much of the
+   factorization it has completed. These reports assume there is only one
+   sieving machine, so if you're using more than one sieving machine you 
+   should not believe this output. When starting from the super-savefile,
+   there really *is* one machine running so the output is accurate. If starting
+   from the super-savefile showes that you only have a few relations left,
+   you don't have to restart all the sieving machines; just let the one
+   copy of Msieve finish the job.
+
+3. At no point should the super-savefile contain any duplicate relations.
+   Obviously, finding one relation and copying it a million times will not
+   get you any closer to finishing the factorization. If you do this, you'll 
+   fool msieve into thinking it has 'enough' relations, the combining phase
+   will start, all the duplicates will get deleted and the combining phase
+   will fail. It's just wasted effort. Likewise, sieving machines must all
+   generate their own relations; DO NOT give relations back to sieving machines
+   or share relations found across sieving machines. All you'll do is 
+   generate a huge number of duplicates that will just get removed anyway.
+
+4. Msieve uses the same name by default for its savefile. If your sieving
+   machines write to a network directory, make sure they do not all write to
+   the same file. There is no synchronization that keeps sieving machines
+   from stomping on each other's output, and the code needed to lock the
+   savefile is too machine-specific so I didn't add it. Msieve has a *lot*
+   of error checking in the combining phase, so it's possible that the 
+   factorization will succeed even if everybody did write to the same savefile. 
+   However, every corrupted relation that must be skipped in the combining
+   phase represents good work that you've wasted.
+
+With the recipes in mind and a little patience, distributed sieving can be
+a powerful tool for finishing your factorizations faster.
+
+
+Frequently Asked Questions
+--------------------------
+
+Q. Why did you stop at 125 digits? I want to factor much bigger numbers.
+A. I had to stop somewhere. Honestly, if you want to factor numbers
+   significantly larger than 100 digits then you shouldn't be using the
+   quadratic sieve, but the number field sieve instead. There used to be
+   only one choice for an NFS package, the CWI suite. In the last few
+   years, though, there's an alternative: GGNFS. This package is both
+   very powerful and very easy to use, with a big user community that is
+   constantly improving it. You can get started at the GGNFS yahoo group,
+   www.yahoogroups.com/group/ggnfs.
+
+Q. GGNFS is confusing / I don't understand it / I can't get it to work / 
+   NFS scares me. Can't you raise the limit in Msieve?
+A. Which is better, spending a month running my code, or spending a week
+   figuring out how to use the right tool for the job and then spending
+   three days performing your factorization? If you insist on spending
+   years factoring one number, the code is very easy to change.
+
+Q. Can you make Msieve network aware? Can you make it a client-server thingy?
+   Can I use the internet to factor numbers?
+A. The demo application for the Msieve library is just that, a demo. I don't
+   know anything about network programming and I'm not qualified to build
+   a client-server application that's safe in the face of internet threats.
+   If you have these kinds of smarts, you can use Msieve in your own code
+   and I'll help as much as I can. The demo is good enough for people with
+   a few machines on a small private LAN, and this is ~100% of the user
+   community right now.
+
+Q. How can I modify Msieve to work on a cluster?
+A. Distributed sieving is so easy that you don't need high-performance
+   parallel programming techniques or message passing libraries to do it.
+   If you're lucky enough to have a cluster then the batch scheduling
+   system that comes with the cluster is more than enough to implement
+   cluster-aware sieving. Of course if you have access to that much firepower
+   you owe it to yourself to use an NFS package of some sort.
+
+Q. Can you add other factoring algorithms to the Msieve library?
+A. Do you mean P+1, P-1, ECM? The GMP-ECM package does those better than
+   I ever could. You should use that instead. It also has a huge user
+   community to support it. Msieve uses trial division because it's easy
+   and SQUFOF because it's there already and avoids needing QS to factor
+   numbers that are too small. I see Msieve as filling the void between
+   where GMP-ECM leaves off and where NFS starts up.
+
+Q. Why put Msieve into the public domain and not make it GPL?
+   Wouldn't GPL-ed code protect your work and encourage contributions?
+A. Msieve is a learning exercise, not a collaborative effort per se. 
+   I don't expect other developers to help, though several have and it's
+   appreciated. As for protection, there's only one way to generate income 
+   from this code: use it to win factoring contests. The last factoring
+   contest that was small enough to win with a QS program was in the early 
+   1990s. Given that computational number theory isn't profitable, I don't
+   see a reason to protect this code.
+
+Q. Your multiple precision library sucks. Why didn't you use GMP?
+A. I know it sucks. Using GMP would have left MSVC users in the cold,
+   and even building GMP is a major exercise that requires essentially a
+   complete and up-to-date unix environment. The latest GMP can't even build
+   on several platforms that Msieve runs happily on. The nice thing about
+   the quadratic sieve is that for big factorizations the actual multiple
+   precision math takes about 1% of the total runtime. Since bignum performance
+   isn't an issue but portability is, I decided against GMP. Larry Soule is 
+   actually most of the way through a port of Msieve to use GMP, and it does 
+   make small factorizations (70-80 digits) noticeably faster.
+
+
+Credits
+-------
+
+Especially as the code became more useful, credit is due to several people
+who pushed it very hard. 
+
+Tom Cage found lots of bugs and ground through hundreds of factorizations.
+
+The regulars in the Factoring forum of www.mersenneforum.org (especially
+Jes, Luigi, Sam, Dennis, Sander, Mark R., Peter S., Jeff G.) also did tons 
+of factoring work.
+
+Paul Leyland and Alex Kruppa contributed useful theoretical stuff.
+
+Falk Hueffner and Francois Glineur found several nasty bugs in earlier versions.
+
+J6M contributed did the AIX port.
+
+Larry Soule is incorporating GMP into the code.
+
+I know I left out people, but that's my fault and not theirs.
+
+
+References
+----------
+
+Most of these are papers that are available online.
+
+The book "Prime Numbers: A Computational Perspective", by Richard Crandall
+and Carl Pomerance, is an excellent introduction to the quadratic sieve and
+many other topics in computational number theory.
+
+Scott Contini's thesis, "Factoring Large Integers with the Self-Initializing
+Quadratic Sieve", is an implementer's dream; it fills in all the details of
+the sieving process that Crandall and Pomerance gloss over.
+
+Wambach and Wettig's 1995 paper "Block Sieving Algorithms" give an introduction
+to making sieving cache-friendly. Msieve uses very different (more efficient)
+algorithms, but you should try to understand these first.
+
+AISACRYPT 2004 has a paper titled "Sieving Using Bucket Sort" that more 
+accurately describes the algorithm Msieve uses.
+
+Lenstra and Manasse's 1994 paper "Factoring with Two Large Primes" describes
+in great detail the cycle-finding algorithm that is the heart of the combining
+stage of Msieve. More background information on spanning trees and cycle-
+finding can be found in Manuel Huber's 2003 paper "Implementation of Algorithms
+for Sparse Cycle Bases of Graphs". This was the paper that connected the 
+dots for me.
+
+There are two widely available descriptions of SQUFOF. An introductory one
+is Hans Riesel's section titled "Shanks' Factoring Method SQUFOF" in his book
+"Prime Numbers and Computer Methods for Factorization". The much more 
+advanced one is "Square Form Factorization", a PhD dissertation by Jason
+Gower. Henri Cohen also mentions SQUFOF in a more theoretical treatment
+whose name I don't have. Daniel Shanks was a professor at the University of
+Maryland while I was a student there, and his work got me interested in
+number theory and computer programming. I dearly wish I met him before he
+died in 1996.
+
+Brandt Kurowski's 1998 paper "The Multiple Polynomial Quadratic Sieve: A 
+Platform-Independent Distributed Application" is the only reference I 
+could find that describes the Knuth-Schroeppel multiplier algorithm.
+
+Davis and Holdrige's 1983 paper "Factorization Using the Quadratic Sieve
+Algorithm" gives a surprising theoretical treatment of how QS works. Reading
+it felt like finding some kind of forgotten evolutionary offshoot, strangely
+different from the conventional way of implementing QS.
+
+Peter Montgomery's paper "A Block Lanczos Algorithm for Finding Dependencies
+over GF(2)" revolutionized the factoring business. The paper by itself isn't
+enough to implement his algorithm; you really need someone else's 
+implementation to fill in a few critical gaps.

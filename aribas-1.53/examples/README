@@ -1,0 +1,13 @@
+This directory contains some files with examples of
+ARIBAS source code.
+
+factor.ari
+    several factoring routines
+
+pi.ari
+    several algorithms for calculating pi to many
+    decimal places
+
+queens.ari
+    ARIBAS implementation of the n queens problem.
+

@@ -1,0 +1,75 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS Beispiel-Code zu Paragraph 1
+** Die Peano-Axiome
+*)
+(*----------------------------------------------------------*)
+(*
+** Rekursive Definition der Adition zweier
+** natuerlicher Zahlen x,y
+** Fuer das korrekte Funktionieren ist wesentlich, dass y >= 0
+*)
+function p_add(x,y: integer): integer;
+var
+    z: integer;
+begin
+    if y = 0 then
+        return x;
+    else
+        z := p_add(x,dec(y));
+        return inc(z);
+    end;
+end;
+(*----------------------------------------------------------*)
+(*
+** Rekursive Definition der Multiplikation zweier
+** natuerlicher Zahlen x,y
+** Fuer das korrekte Funktionieren ist wesentlich, dass y >= 0
+** Sehr langsam!
+*)
+function p_mult(x,y: integer): integer;
+var
+    z: integer;
+begin
+    if y = 0 then
+        return 0;
+    else
+        z := p_mult(x,dec(y));
+        return p_add(z,x);
+    end;
+end;
+(*----------------------------------------------------------*)
+(*
+** Rekursive Definition der Potenz x**y
+** zweier natuerlicher Zahlen x,y
+** Fuer das korrekte Funktionieren ist wesentlich, dass y >= 0
+*)
+function p_pow(x,y: integer): integer;
+var
+    z: integer;
+begin
+    if y = 0 then
+        return 1;
+    else
+        z := p_pow(x,dec(y));
+        return z * x;
+    end;
+end;
+(*----------------------------------------------------------*)
+(*
+** Liefert genau dann true, wenn x < y
+*)
+function p_less(x,y: integer): boolean;
+begin
+    if x = 0 then
+        return not (y = 0);
+    elsif y = 0 then
+        return false;
+    else
+        return p_less(dec(x),dec(y));
+    end;
+end;
+(*----------------------------------------------------------*)

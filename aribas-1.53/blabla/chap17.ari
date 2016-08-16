@@ -1,0 +1,58 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 17
+** Der (p+1)-Primzahltest, Mersennesche Primzahlen
+*)
+(*--------------------------------------------------------------*)
+(*
+** Testet fuer ungerade Zahlen n >= 3, ob 2**n-1 eine Primzahl ist
+*)
+function mtest(n: integer): boolean;
+var
+    M, k, v: integer;
+begin
+    v := 4;
+    M := 2**n - 1;
+    for k := 1 to n-2 do
+        v := (v*v - 2) mod M;
+    end;
+    return (v = 0);
+end.
+(*--------------------------------------------------------------*)
+(*
+** Erstellt ein Array aller Primzahlen start <= p <= last
+** Voraussetzung last < 2**32 und last-start <= 10000
+** Beispiel-Aufruf: primelist(10**6,10**6+1000).
+*)
+function primelist(start, last: integer): array;
+var
+     st: stack;
+     n: integer;
+     vec: array;
+begin
+    if last > 2**32 then
+        writeln("upper bound <= 2**32 expected");
+        return ();
+    elsif last - start > 10000 then
+        writeln("interval too big");
+        return ();
+    end;
+    if start <= 2 then
+        stack_push(st,2);
+        n := 3;
+    else
+        n := start;
+        if even(n) then inc(n); end;
+        while not prime32test(n) do inc(n,2); end;
+    end;
+    while n <= last do
+        stack_push(st,n);
+        inc(n,2);
+        while not prime32test(n) do inc(n,2); end;
+    end;
+    return stack2array(st);
+end;
+(*--------------------------------------------------------------*)

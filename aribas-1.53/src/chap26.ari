@@ -1,0 +1,382 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 26
+** Idealklassen quadratischer Zahlkoerper
+*)
+(*----------------------------------------------------------*)
+(*
+** Wurzelziehen modulo p
+*)
+(*----------------------------------------------------------*)
+(*
+** Quadratwurzel von a mod p
+** Voraussetzung: p ungerade Primzahl, jacobi(a,p) = 1.
+*)
+function fp_sqrt(p,a: integer): integer;
+begin
+    if p mod 4 = 1 then
+        return fp_sqrt1(p,a);
+    else (* p = 3 mod 4 *)
+        return a ** ((p+1) div 4) mod p;
+    end;
+end;
+(*----------------------------------------------------------*)
+(*
+** Quadratwurzel von a mod p
+** Voraussetzung: p ungerade Primzahl = 1 mod 4, jacobi(a,p) = 1.
+*)
+function fp_sqrt1(p,a: integer): integer;
+var
+    b: integer;
+    x: array[2];
+begin
+    b := 1;
+    while jacobi(b*b-a,p) /= -1 do inc(b) end;
+    x := fp2_pow(p, b*b-a, (b,1), (p+1) div 2);
+    return x[0];
+end;
+(*----------------------------------------------------------*)
+(*
+** Multiplikation im Koerper Fp[sqrt D]
+*)
+function fp2_mult(p,D: integer; x,y: array[2]): array[2];
+var
+    z0, z1: integer;
+begin
+    z0 := x[0]*y[0] + D*x[1]*y[1];
+    z1 := x[0]*y[1] + x[1]*y[0];
+    return (z0 mod p, z1 mod p);
+end;
+(*----------------------------------------------------------*)
+(*
+** Potenz x**ex im Koerper Fp(sqrt(D)), jacobi(D,p) = -1
+** Voraussetzung ex >= 0.
+*)
+function fp2_pow(p,D: integer; x: array[2]; N: integer): array[2];
+var
+    i: integer;
+    z: array[2];
+begin
+    if N = 0 then return (1, 0); end;
+    z := x;
+    for i := bit_length(N)-2 to 0 by -1 do
+        z := fp2_mult(p,D,z,z);
+        if bit_test(N,i) then
+            z := fp2_mult(p,D,z,x);
+        end;
+    end;
+    return z;
+end;
+(*--------------------------------------------------------------*)
+(*
+** Erstellt ein Array von Faktoren von x
+** Alle Elemente, bis auf moeglicherweise das letzte, sind
+** Primfaktoren < 2**16. Ist das letzte Element < 2**32,
+** so ist es ebenfalls prim
+*)
+function factorlist(x: integer): array;
+var
+    st: stack;
+    q: integer;
+begin
+    q := 2;
+    while q := factor16(x,q) do
+        stack_push(st,q);
+        x := x div q;
+    end;
+    stack_push(st,x);
+    return stack2array(st);
+end;
+(*--------------------------------------------------------------*)
+(*
+** Produkt aller ungeraden Primzahlen B0 < p <= B1
+** und aller ungeraden ganzen Zahlen 2*isqrt(B0)+1 < n <= 2*isqrt(B1)+1
+** Funktioniert nur richtig, wenn n1 < 2**32
+*)
+function poexpo(B0,B1: integer): integer;
+var
+    x, m0, m1, i: integer;
+begin
+    x := 1;
+    m0 := isqrt(B0)+1; m1 := isqrt(B1);
+    for i := m0 to m1 do
+        x := x*(2*i + 1);
+    end;
+    if odd(B0) then inc(B0) end;
+    for i := B0+1 to B1 by 2 do
+        if prime32test(i) > 0 then x := x*i; end;
+    end;
+    return x;
+end;
+(*-----------------------------------------------------*)
+(*
+** Routinen fuer Ideal-Klassen in imaginaer-quadratischen
+** Zahlkoerpern Q(sqrt(-Delta)), Delta = 3 mod 4 oder Delta = 0 mod 4
+**
+** Idealklassen werden dargestellt als Paare ganzer Zahlen.
+** (a,b) steht fuer die Idealklasse, die durch das Gitter
+** (a, (b + sqrt(-Delta))/2) repraesentiert wird.
+** Es muss gelten b = Delta mod 2.
+** Die zugehoerige quadratische Form ist a*x*x + b*x*y + c*y*y,
+** wobei c := (b*b + Delta)/(4*a), (Division muss aufgehen).
+** Ein Repraesentant (a,b) ist reduziert, falls
+**	abs(b) <= a <= c
+** und b >= 0, falls abs(b) = a oder c = a
+*)
+(*-----------------------------------------------------------*)
+(*
+** Multiplikation von x1 mit x2
+*)
+function cl_mult(x1,x2: array[2]; Delta: integer): array[2];
+var
+    a1,b1,a2,b2,a,b,d,ac2,u1,u2,v1,v2: integer;
+begin
+    a1 := x1[0]; b1 := x1[1];
+    a2 := x2[0]; b2 := x2[1];
+    d := gcdx(a1,a2,u1,u2);
+    if d = 1 then
+	a := a1*a2;
+	b := b2 + u2*a2*(b1-b2);
+    else
+        d := gcdx(d,(b1+b2) div 2,v1,v2);
+        ac2 := (b2*b2 + Delta) div 2;
+        if d > 1 then
+            a1 := a1 div d;
+            a2 := a2 div d;
+            ac2 := ac2 div d;
+	end;
+	a := a1*a2;
+	b := b2 + v1*u2*a2*(b1-b2) - v2*ac2;
+    end;
+    return cl_reduce((a,b),Delta);
+end;
+(*----------------------------------------------------------*)
+(*
+** Berechnet x*x in der Klassengruppe
+*)
+function cl_square(x: array[2]; Delta: integer): array[2];
+var
+    a,b,d,ac2,alfa,beta: integer;
+begin
+    a := x[0]; b := x[1];
+    d := gcdx(a,b,alfa,beta);
+    ac2 := (b*b + Delta) div 2;
+    if d > 1 then
+	a := a div d;
+	ac2 := ac2 div d;
+    end;
+    return cl_reduce((a*a, b - beta*ac2),Delta);
+end;
+(*-----------------------------------------------------------*)
+(*
+** Ergibt die Einsklasse
+*)
+function cl_unit(Delta: integer): array[2];
+begin
+    if Delta mod 4 = 0 then
+        return (1,0);
+    else
+	return (1,1);
+    end;
+end;
+(*-----------------------------------------------------------*)
+(*
+** Berechnet die inverse Klasse von x
+*)
+function cl_inverse(x: array[2]; Delta: integer): array[2];
+begin
+    x[1] := -x[1];
+    return cl_reduce(x,Delta);
+end;
+(*-----------------------------------------------------------*)
+(*
+** Berechnet x**n in der Klassengruppe (n >= 0).
+*)
+function cl_pow(x: array[2]; n,Delta: integer): array[2];
+var
+    z: array[2];
+    i: integer;
+begin
+    if n = 0 then return cl_unit(Delta); end;
+    z := x;
+    for i := bit_length(n)-2 to 0 by -1 do
+        z := cl_square(z,Delta);
+        if bit_test(n,i) then
+            z := cl_mult(z,x,Delta);
+        end;
+    end;
+    return z;
+end;
+(*-----------------------------------------------------------*)
+(*
+** Reduziert das Ideal x
+** im imaginaer-quadratischen Zahlkoerper Q(sqrt(-Delta))
+*)
+function cl_reduce(x: array[2]; Delta: integer): array[2];
+var
+    a,b,c,d: integer;
+begin
+    a := x[0]; b := x[1];
+    while true do
+        b := b mod (2*a);
+        if b > a then b := b - 2*a; end;
+        c := (b*b + Delta) div (4*a);
+        if a <= c then
+            if a = c and b < 0 then b := -b; end;
+            return (a,b);
+        end;
+        a := c; b := -b;
+    end;
+end;
+(*-----------------------------------------------------------*)
+(*
+** Erzeugt eine Idealklasse (p,b) mit Diskriminante Delta,
+** wobei p die naechste ungerade Primzahl >= a ist,
+** und gibt deren Reduktion zurueck.
+** Voraussetzung: 0 < a < 2**32
+*)
+function cl_prim(a,Delta: integer): array[2];
+var
+    b,p: integer;
+begin
+    p := max(a,3);
+    if even(p) then inc(p); end;
+    while factor16(p) or jacobi(-Delta,p) /= 1 do
+        inc(p,2);
+    end;
+    b := fp_sqrt(p,-Delta);
+    if odd(Delta) /= odd(b) then b := p - b; end;
+    return cl_reduce((p,b),Delta);
+end;
+(*-----------------------------------------------------------*)
+(*
+** Sucht durch sukzessives Quadrieren von H eine ambige Klasse.
+** Falls erfolgreich, wird die ambige Klasse zurueckgegeben.
+** Andernfalls wird die
+** zuletzt berechnete Potenz von H zurueckgegeben.
+*)
+function cl_powtwoamb(X: array[2]; Delta: integer): array[2];
+var
+    i: integer;
+    X2, Eins: array[2];
+begin
+    Eins := cl_unit(Delta);
+    for i := 1 to bit_length(Delta) div 2 do
+        X2 := cl_square(X,Delta);
+        if X2 = Eins then return X; end;
+        X := X2;
+    end;
+    return X;
+end;
+(*-----------------------------------------------------------*)
+(*
+** Initialisierungs-Funktion fuer cl_ranwalk
+*)
+function cl_rwinit(x: array[2]; bound: integer;
+                  var XX: array of array[2];
+                  var KK: array; Delta: integer);
+var
+    i: integer;
+begin
+    for i := 0 to length(XX)-1 do
+        KK[i] := 1 + random(bound);
+        XX[i] := cl_pow(x,KK[i],Delta);
+    end;
+end;
+(*-----------------------------------------------------------*)
+(*
+** Random Walk in der von x erzeugten zyklischen Untergruppe
+** Klassengruppe von Q(sqrt(-Delta)) mit hoechstens anz Schritten.
+** anz sollte groesser als die Quadratwurzel der Ordnung
+** von x sein.
+** Falls erfolgreich, ist der Rueckgabewert ein Vielfaches
+** der Ordnung von x, sonst 0.
+*)
+function cl_ranwalk(x: array[2]; anz,Delta: integer): integer;
+const
+    p = 8191; s = 16;
+var
+    XX: array[s] of array[2]; KK: array[s];
+    y, z: array[2];
+    i, nu, t1, t2: integer;
+begin
+    cl_rwinit(x,anz*anz,XX,KK,Delta);
+    z := y := x; t2 := t1 := 1;
+    for i := 1 to anz do
+        nu := (y[1]**2 mod p) mod s; inc(t1,KK[nu]);
+        y := cl_mult(y,XX[nu],Delta);
+        nu := (z[1]**2 mod p) mod s; inc(t2,KK[nu]);
+        z := cl_mult(z,XX[nu],Delta);
+        nu := (z[1]**2 mod p) mod s; inc(t2,KK[nu]);
+        z := cl_mult(z,XX[nu],Delta);
+        if y = z then return t2 - t1; end;
+    end;
+    return 0;
+end;
+(*-----------------------------------------------------------*)
+(*
+** Faktorisiere N mit der Klassengruppen-Methode
+** pbound: Obere Schranke fuer den Primteiler des Exponenten
+** anz: Obere Schranke fuer die Anzahl der Versuche
+*)
+function cl_factorize(N,pbound,anz: integer): integer;
+var
+    i, s, d: integer;
+begin
+    if even(N) then return 2; end;
+    s := (N + 2) mod 4;
+    for i := 1 to anz do
+        if s > 1 and N mod s = 0 then return s; end;
+        write(s);
+        d := cl_factorize0(s,N,pbound);
+        if d > 1 then return d; end;
+        inc(s,4);
+        while factor16(s) do inc(s,4); end;
+    end;
+    return 0;
+end;
+(*-----------------------------------------------------------*)
+(*
+** Versucht N mittels der Klassengruppe von Q(sqrt(-s*N)) zu
+** faktorisieren. Es wird vorausgesetzt, dass s*N = 3 mod 4.
+*)
+function cl_factorize0(s,N,pbound: integer): integer;
+var
+    i, anz, Delta, d, expo, t: integer;
+    X, X0, X2, Eins: array[2];
+begin
+    Delta := s*N;
+    Eins := cl_unit(Delta);
+    expo := poexpo(1,pbound);
+    i := anz := 1;
+    while i <= anz do
+        inc(i); write('.');
+        X0 := cl_prim(random(64000),Delta);
+        X := cl_pow(X0,expo,Delta);
+        if X = Eins then
+            anz := 4; write(';');
+    	else
+            X2 := cl_powtwoamb(X,Delta);
+            if X2 /= cl_inverse(X2,Delta) then
+                write(':');
+                t := cl_ranwalk(X2,pbound,Delta);
+                if t > 0 then
+                    while even(t) do t := t div 2; end;
+                    X := cl_pow(X,t,Delta);
+                    X2 := cl_powtwoamb(X,Delta);
+		end;
+	    end;
+            if X2 = cl_inverse(X2,Delta) then
+                anz := 8; write('!');
+                d := 2*X2[0] - X2[1];
+                d := gcd(N,d);
+                if d > 1 then writeln(); return d; end;
+	    end;
+	end;
+    end;
+    return 0;
+end;
+(*-----------------------------------------------------------*)

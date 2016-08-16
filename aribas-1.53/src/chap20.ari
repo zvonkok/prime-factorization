@@ -1,0 +1,125 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 20
+** Die schnelle Fourier-Transformation und
+** die Multiplikation grosser Zahlen
+*)
+(*----------------------------------------------------------*)
+function bitreverse(x,d: integer): integer;
+var
+    i, z: integer;
+begin
+    for i := 0 to d-1 do
+        if bit_test(x,i) then
+            z := bit_set(z,d-i-1);
+        end;
+    end;
+    return z;
+end;
+(*----------------------------------------------------------*)
+function brevorder(var X: array; N: integer): array;
+var
+    d,i,k,temp: integer;
+begin
+    d := bit_length(N) - 1;
+    for i := 0 to N-1 do
+        k := bitreverse(i,d);
+        if i < k then
+            temp := X[i]; X[i] := X[k]; X[k] := temp;
+        end;
+    end;
+    return X;
+end;
+(*----------------------------------------------------------*)
+(*
+** Fourier-Transformation des Arrays X ueber Z/M.
+** Das Array muss die Laenge N haben, das eine Zweierpotenz sein muss.
+** omega muss eine primitive N-te Einheitswurzel mod M sein.
+*)
+function fft(var X: array; N, omega, M: integer): array;
+var
+    n, m, m2, i, i0, i1, k, z, rho, rr: integer;
+begin
+    brevorder(X,N);
+    n := bit_length(N) - 1;	(* N = 2**n *)
+    for k := 0 to n-1 do
+        m := 2**k; m2 := 2*m;
+	rr := 1;
+        rho := omega**(2**(n-k-1)) mod M;
+        (* rho ist primitive m2-te Einheitswurzel *)
+        for i := 0 to m-1 do
+            for i0 := i to N-1 by m2 do
+                i1 := i0 + m;
+                z := (X[i1] * rr) mod M;        (* rr = rho**i *)
+                X[i1] := (X[i0] - z) mod M;
+                X[i0] := (X[i0] + z) mod M;
+            end;
+            rr := rr * rho mod M;
+	end;
+    end;
+    return X;
+end;
+(*----------------------------------------------------------*)
+function fftinv(var X: array; N, omega, M: integer): array;
+var
+    i, s: integer;
+begin
+    omega := mod_inverse(omega,M);
+    s := mod_inverse(N,M);
+    fft(X,N,omega,M);
+    for i := 0 to N-1 do
+        X[i] := s * X[i] mod M;
+    end;
+    return X;
+end;
+(*----------------------------------------------------------*)
+function fft_square(x: integer): integer;
+const
+    Modul = 2**32 - 2**20 + 1;  (* Primzahl *)
+    Primroot = 19;              (* Primitivwurzel mod Modul *)
+var
+    X: array;
+    N, i, s, omega: integer;
+begin
+    X := int2fftarr(x);
+    N := length(X); s := (Modul - 1) div N;
+    omega := Primroot**s mod Modul;
+    fft(X,N,omega,Modul);
+    for i := 0 to N-1 do
+        X[i] := X[i] ** 2 mod Modul;
+    end;
+    fftinv(X,N,omega,Modul);
+    return fftarr2int(X);
+end;
+(*----------------------------------------------------------*)
+function int2fftarr(x: integer): array;
+var
+    bb: byte_string;
+    X: array;
+    len, k, i: integer;
+begin
+    bb := byte_string(x);
+    len := length(bb);
+    k := bit_length(len-1);     (* len <= 2**k *)
+    X := alloc(array,2**(k+1),0);
+    for i := 0 to len-1 do X[i] := bb[i]; end;
+    return X;
+end;
+(*----------------------------------------------------------*)
+function fftarr2int(var X: array): integer;
+var
+    bb: byte_string[length(X)];
+    len, i: integer;
+begin
+    len := length(X);
+    for i := 0 to len-2 do
+        X[i+1] := X[i+1] + bit_shift(X[i],-8);
+        X[i] := bit_and(X[i],0xFF);
+    end;
+    for i := 0 to len-1 do bb[i] := X[i]; end;
+    return cardinal(bb);
+end;
+(*----------------------------------------------------------*)

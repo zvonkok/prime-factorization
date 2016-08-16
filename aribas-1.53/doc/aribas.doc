@@ -1,0 +1,4104 @@
+File aribas.doc
+
+DOCUMENTATION of the
+
+ARIBAS interpreter for Arithmetic, Version 1.50, August 2004
+Copyright (C) 1996-2004 O.Forster
+
+ARIBAS is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+Address of the author
+
+        Otto Forster
+        Math. Institut der LMU
+        Theresienstr. 39
+        D-80333 Muenchen, Germany
+
+Email   forster@mathematik.uni-muenchen.de
+WWW     http://www.mathematik.uni-muenchen.de/~forster
+
+The latest version of ARIBAS can be obtained by anonymous ftp from
+
+    ftp.mathematik.uni-muenchen.de
+
+directory
+
+    pub/forster/aribas
+
+(*-------------------------------------------------------------------*)
+Date of last change of this documentation:
+
+1997-04-22:   added sections on records and pointers, configuration file
+1997-07-06:   option -b, readln and multi-line integers
+1997-08-19:   getenv; removed create_array; added information on load
+1998-10-19:   qs_factorize, next_prime, continue
+1999-04-30:   quiet option for qs_factorize et al.
+2002-03-03:   max_floatprec, vector operations
+2003-06-09:	  Simultaneous Assignment, divide, bit_count, gmtime,
+              set_workdir, get_workdir, realloc, stack2string, 
+              stack_arraypush, string_scan, binsearch
+2002-11-08:   ec_factorize
+2004-08-07:   gfp_sqrt, arithmetic in GF(2**n)
+
+(*-------------------------------------------------------------------*)
+Contents
+
+1) INTRODUCTION
+2) IDENTIFIERS
+3) DATA TYPES
+4) OPERATORS, EXPRESSIONS
+5) VARIABLE DECLARATIONS
+6) TYPE DEFINITIONS, RECORDS, POINTERS
+7) CONTROL STRUCTURES
+8) FUNCTION REFERENCE
+   a) Functions for integer arithmetic
+   a1) Functions for arithmetic in GF(2**n)
+   b) Functions for real arithmetic and analysis
+   c) Random
+   d) Characters, strings
+   e) Byte_strings
+   f) Arrays, records
+   g) Stacks
+   h) In/Out
+   i) System functions
+9) USER DEFINED FUNCTIONS
+10) COMMAND LINE ARGUMENTS
+(*-------------------------------------------------------------*)
+
+1) INTRODUCTION
+===============
+
+ARIBAS is an interactive Interpreter suitable for big integer
+arithmetic and multiprecision floating point arithmetic.
+It has a syntax similar to Pascal or Modula-2, but contains also
+features from other programming languages like C, Lisp, Oberon.
+
+After ARIBAS is started, it displays a prompt ==>
+and you may input an expression you want to calculate.
+You must mark the end of the input by a full stop '.' and then
+press the RETURN key.
+
+Examples:
+
+==> 2*3 + 17.
+-: 23
+
+==> 2**1000.
+-: 10_71508_60718_62673_20948_42504_90600_01810_56140_48117_05533_60744_37503_
+88370_35105_11249_36122_49319_83788_15695_85812_75946_72917_55314_68251_87145_
+28569_23140_43598_45775_74698_57480_39345_67774_82423_09854_21074_60506_23711_
+41877_95418_21530_46474_98358_19412_67398_76755_91655_43946_07706_29145_71196_
+47768_65421_67660_42983_16526_24386_83720_56680_69376
+
+The operator ** denotes exponentiation (as in FORTRAN). The symbol
+-: introduces the result of a calculation.
+You may also input several expressions separated by semicolons,
+for example
+
+==> x := 3; y := 4;
+    z := sqrt(x*x + y*y).
+-: 5.00000000
+
+There are also control structures available, e.g. the for-loop
+which has a syntax similar to Modula-2
+
+==> for k := 2 to 10 do
+        writeln(k:3,log(k):12:6);
+    end.
+  2    0.693147
+  3    1.098612
+  4    1.386294
+  5    1.609438
+  6    1.791759
+  7    1.945910
+  8    2.079442
+  9    2.197225
+ 10    2.302585
+
+In this example the natural logarithms of the integers from 2 to 10
+were displayed as a side effect of the writeln command (which
+allows format options as in Pascal). The for-loop has an empty
+result.
+You can also define your own functions, for example
+
+==> function fac(n: integer): integer;
+    var
+        x: integer;
+    begin
+        x := 1;
+        while n > 1 do
+            x := x*n;
+            dec(n);
+        end;
+        return x;
+    end.
+-: fac
+
+The result of this input is the symbol denoting the name of
+the defined function. From now on, you can use this function
+
+==> fac(100).
+-: 933_26215_44394_41526_81699_23885_62667_00490_71596_82643_81621_46859_
+29638_95217_59999_32299_15608_94146_39761_56518_28625_36979_20827_22375_82511_
+85210_91686_40000_00000_00000_00000_00000
+
+These examples are meant only as a first short presentation of
+ARIBAS. To get a practical introduction, please study the tutorial
+(file aribas.tut).
+
+The following is a more systematic description of ARIBAS.
+
+2) IDENTIFIERS
+==============
+
+Identifiers (names of variables, functions and data types) may be
+composed of the letters from a to z and A to Z, the digits 0 to 9,
+and the underscore _. The first character of an identifier cannot
+be a digit.
+Examples of admissible identifiers:
+        x
+        x1
+        _alfa1
+        lower_bound
+        maxSize
+Examples of inadmissible identifiers are 1alpha, beta.2 or gamma_$3.
+Identifiers may not contain embedded spaces and may not extend
+over several lines. Otherwise the length is arbitrary. All characters
+of the identifier are significant. ARIBAS is case sensitive, so
+maxSize and maxsize are different identifiers. Identifiers of
+user defined variables, functions and data types must be different from
+the keywords of ARIBAS and from the names of builtin functions and
+procedures. One can get a list of these reserved names by the command
+
+==> symbols(aribas).
+-: (ARGV, _, __, ___, abs, alloc, and, arccos, arcsin, arctan, arctan2, aribas,
+array, atof, atoi, begin, binary, binsearch, bit_and, bit_clear, bit_count, 
+bit_length, bit_not, bit_or, bit_set, bit_shift, bit_test, bit_xor, boolean, 
+break, by, byte_string, cardinal, cf_factorize, char, chr, close, concat, 
+const, continue, cos, dec, decode_float, div, divide, do, double_float, else, 
+elsif, end, even, exit, exp, extended_float, external, factor16, factorial, 
+false, file, float, float_ecvt, floor, flush, for, frac, ftoa, function, gc, 
+gcd, gcdx, get_filepos, get_floatprec, get_printbase, get_printprec, 
+get_workdir, getenv, gmtime, halt, help, if, inc, integer, isqrt, itoa, jacobi,
+length, load, log, long_float, make_unbound, max, max_arraysize, max_floatprec,
+max_intsize, mem_and, mem_bclear, mem_bitswap, mem_bset, mem_btest, 
+mem_byteswap, mem_not, mem_or, mem_shift, mem_xor, memavail, min, mod, 
+mod_coshmult, mod_inverse, mod_pemult, new, next_prime, nil, not, odd, of, 
+open_append, open_read, open_write, or, ord, pi, pointer, prime32test, 
+procedure, product, qs_factorize, rab_primetest, random, random_seed, 
+read_block, read_byte, readln, real, realloc, record, return, rewind, 
+rho_factorize, round, set_filepos, set_floatprec, set_printbase, set_printprec,
+set_workdir, sin, single_float, sort, sqrt, stack, stack2array, stack2string, 
+stack_arraypush, stack_empty, stack_pop, stack_push, stack_reset, stack_top, 
+stderr, stdin, stdout, string, string_scan, string_split, substr_index, sum, 
+symbols, system, tan, then, timer, to, tolower, toupper, transcript, true, 
+trunc, type, user, var, version, while, write, write_block, write_byte, 
+writeln)
+
+The symbols _, __ and ___ are system variables which contain the
+three last results.
+
+Example:
+
+==> sqrt(2).
+-: 1.41421356
+
+==> sqrt(_).
+-: 1.18920711
+
+==> sqrt(_).
+-: 1.09050773
+
+==> _ * __ * ___.
+-: 1.83400808
+
+==> _ ** (8/7).
+-: 2.00000000
+
+Here we calculated the square root of 2, the fourth and the eighth
+root of 2 and multiplied the three results. This gives 2 to the power
+7/8. Therefore, if we exponentiate by 8/7, we must get back the
+number 2.
+
+Comments
+--------
+Text between the symbols  (*  and  *)  is considered by ARIBAS
+as a comment and is ignored. Comments may extend over several lines.
+Nested comments are not allowed.
+There is another possibility to insert short comments: Text
+between the hash character # and the line end is also ignored
+by ARIBAS.
+
+3) DATA TYPES
+=============
+
+ARIBAS supports the following data types
+
+        integer
+        real
+        boolean
+        char
+        string
+        byte_string
+        array
+        stack
+        file
+        function
+        record
+        pointer
+
+(*----------------------------------------------------------------*)
+integer
+
+The data type integer comprises the whole numbers 0, 1,-1, 2,-2, 3,....
+ARIBAS can handle integers up to 20000 or more decimal digits,
+see function max_intsize() in the function reference.
+Integer literals are given by an optional sign and a sequence
+of decimal digits. For better reading, this sequence of digits
+may be subdivided by underscores. In this case, immediately
+before and immediately after the underscore _, there must be
+a digit. Examples of integer literals:
+        1
+        1234567890
+        -3456_78965_12367
+Besides the decimal representation of integers, ARIBAS allows also
+integer literals with respect to base 2, 8 or 16.
+For base 2, the sequence of binary digits (0 and 1) must be
+preceded by the prefix 0y. The prefix for basis 8 is 0o. For
+basis 16, the sequence of hexadecimal digits (0 ... 9, A ... F)
+must be preceded by 0x. (The hexadecimal digits A ... F may also
+be written in lower case.) An optional sign comes before the
+base prefix. Examples:
+        0y111101
+        0o177
+        0xfffff_ffffe
+        -0x123456789ABCDEF
+
+(*----------------------------------------------------------------*)
+real
+
+The data type real comprises a computer approximation of the real
+numbers. Real literals are given in decimal representation, beginning
+with an optional sign + or -, then a non-empty sequence of decimal
+digits, an obligatory decimal point, a second non-empty sequence
+of decimal digits and an optional scaling factor, consisting of
+the symbol E (or e), an optional sign and a non-empty sequence of
+decimal digits. Examples:
+        0.3
+        +3.1e-45
+        -0.00007E1000
+The following forms are not admissible real literals:
+        .333
+        333e-3
+(The number which is meant by these symbols may be represented by
+0.333 or 333.0e-3). Internally, numbers of type real are stored
+in binary representation (see function decode_float in the function
+reference). This implies for example, that even a simple number
+like 0.1 cannot be represented exactly. The precision used
+for the calculations with real numbers depends on the current
+floating point precision. By default, ARIBAS uses a mantissa of
+32 bits (which corresponds to 9-10 decimal digits), but the user
+may set the precision to a higher value (up to 4096 binary digits),
+using the builtin function set_floatprec. For details, see the
+function reference.
+
+(*----------------------------------------------------------------*)
+boolean
+
+The data type boolean comprises the truth values false and true.
+The logical operators not, and, or apply to boolean operands in the
+usual way and yield boolean results. Boolean values are also the
+result of arithmetic relational operators. In every place where
+ARIBAS expects a boolean value (e.g. as conditions in the if or while
+constructions), one can also use integer values. Then the value 0
+is considered as false and every nonzero integer counts as true
+(this is the same behaviour as in the programming language C).
+
+(*----------------------------------------------------------------*)
+char
+
+The data type char comprises 256 characters with code numbers 0
+to 255. Characters with code numbers < 128 are the standard ASCII
+characters (they comprise printable characters and control characters);
+characters with code number >= 128 are system dependent. Character
+literals of printable characters are given by enclosing the symbol
+between single quotes, as in 'A'. The function chr translates integer
+values from 0 to 255 into the corresponding characters. In this way,
+also the non-printable characters can be represented. For example,
+chr(7) is the bell character (which usually generates a beep when
+output to the terminal), whereas chr(65) is the same as 'A'.
+Remark: In ARIBAS, 'A' and "A" is not the same object (in contrast
+to Modula-2). The latter is a string of length 1.
+
+(*----------------------------------------------------------------*)
+string
+
+The data type string comprises sequences of characters and serves
+to represent text. String literals are given by enclosing the
+character sequence between double quotes, as in "ABCD". A problem
+arises if the string itself contains a double quote, i.e. the
+character '"'. In this case one can use the function concat
+(see function reference). For example, concat("AB",'"',"CD")
+is the 5 character string consisting of the characters
+'A', 'B', '"', 'C', 'D'. In this way one can also construct
+strings which contain control characters, for example
+concat("AB",chr(7),"CD").
+One can access a single character of a string in the following way:
+
+==> s := "abcdef";
+    s[3].
+-: 'd'
+
+The indexing begins with 0, the last character of a string has
+index n-1, where n is the length of the string.
+
+(*----------------------------------------------------------------*)
+byte_string
+
+A byte_string consists of a finite sequence of bytes (a byte is an
+8-bit integer x, 0 <= x < 256). This is essentially the same as the
+Pascal notion of packed array of byte. A byte_string literal is
+written in the form $XXXXXX....XX, where XX stands for the hexadecimal
+representation of a byte. The underscore _ may be used for subdivision
+to increase readability. For example,
+
+==> B := $0080_12FF78.
+-: $0080_12FF_78
+
+defines a byte_string of length 6. One can access the components of
+the byte_string in the same way as in the case of strings.
+
+==> B[1].
+-: 128
+
+==> B[3].
+-: 255
+
+byte_strings can be written to binary files and read from binary
+files (functions write_block and read_block, see function reference).
+Thus byte_strings serve for data exchange between ARIBAS and the
+outside world. There exist transformation functions from integers
+to byte_strings and vice versa (functions byte_string, integer
+and cardinal, see function reference).
+
+(*----------------------------------------------------------------*)
+gf2nint
+
+gf2nint is the data type of elements of the fields GF(2**n)
+of characteristic 2. These fields are supported directly by
+ARIBAS. To be able to do arithmetic in GF(2**n), the field 
+must be initialized by the command 
+
+==> gf2n_init(n).
+
+If no initialization is done, the field GF(2**8) is used
+by default. The admissible range for the degree n of the field
+extends from 2 to an implementation dependend limit, which
+can be queried with the function max_gf2nsize() and which is
+typically about 4000. The field GF(2**n) is represented as
+GF(2)[X]/(f(X)), where f(X) is an irreducible polynomial of
+degree n. The elements of GF(2**n) are represented by polynomials
+of degree < n with coefficients 0 or 1, i.e. by bitvectors
+of length <= n. Literals of data type gf2nint are marked by the 
+prefix 2x, followed by the hexadecimal representation of this
+bitvector. For example, in the field GF(2**8), the element
+2x8A represents the class of the polynomial
+
+    X**7 + X**3 + X,
+
+since 2**7 + 2**3 + 2 = 138 = 0x8A. Also binary and octal
+representations are admissible; these are marked with the
+prefixes 2y and 2o respectively. For example,
+
+    2x8A = 2y10001010 = 2o212.
+
+The zero element of GF(2**n) is 2x0 = 2y0 = 2o0; the unit element
+is 2x1 = 2y1 = 2o1.
+For elements of data type gf2nint the following oprations are
+available:
+
+    x + y, x*y, x/y
+
+Addition, multiplication, division (denominator must be different
+from zero). Since we are in characteristic 2, subtraction x-y
+is the same as addition.
+
+	x**n
+
+Exponentiation: x is a gf2nint, n an integer. The exponent may
+be negative. In this case x must be different from zero.
+x**-1 is the same as 2x1/x.
+
+See also the description of the functions
+
+    gf2nint(x: integer): gf2nint;
+    integer(x: gf2nint): integer;
+    max_gf2nsize(): integer;
+    gf2n_init(deg: integer): integer;
+    gf2n_fieldpol(): integer;
+    gf2n_degree(): integer;
+    gf2n_trace(z: gf2nint): integer;
+
+in the function reference.
+
+(*----------------------------------------------------------------*)
+array of Type
+
+The array is a structured data type, consisting of finite
+sequences of components of a given (but arbitrary) data type Type.
+Array literals are given by a comma separated list of its
+components. The list is enclosed between a pair of parentheses
+( and ), for example
+        vec := (37, 41, -9).
+However, for arrays of length 1, braces must be used.
+        vec1 := {37}.
+The expression (37) is interpreted by ARIBAS as the number 37.
+One may use braces instead of parentheses also for arrays of length > 1.
+The components of an array vec can be accessed as
+        vec[i]
+where 0 <= i < length(vec).
+
+Besides accessing single components, one can also access whole
+subarrays. If vec is an array, then
+        vec[n1..n2]
+denotes the subarray consisting of all components vec[i]
+with n1 <= i <= n2.
+Example:
+
+==> vec := (1,2,3,4,5,6,7,8,9,10).
+-: (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+
+==> vec[2..6].
+-: (3, 4, 5, 6, 7)
+
+The upper bound may be omitted:
+vec[n1..] is equivalent to vec[n1..length(vec)-1].
+
+Subarrays may also appear at the left hand side of assignments
+and thus allow the simultaneous modification of several components.
+Example: Let vec the above array. Then
+
+==> vec[2..6] := (0,-1,-2,-3,-4).
+-: (0,-1,-2,-3,-4)
+
+changes vec to
+
+==> vec.
+-: (1, 2, 0, -1, -2, -3, -4, 8, 9, 10)
+
+The subbarray feature applies also analogously to strings and
+byte_strings.
+
+(*----------------------------------------------------------------*)
+stack
+
+There is a predefined data type stack in ARIBAS. Functions
+operating on stacks are stack_push, stack_pop, stack_top, stack_reset,
+stack_empty, stack2array and length (see function reference).
+Stacks can be used for example to temporarily store objects
+(of arbitrary data type) if the total number is not known in
+advance (e.g. the prime factors of an integer).
+
+(*----------------------------------------------------------------*)
+file
+
+Data type file: ARIBAS supports text files and binary files.
+See function reference, subsection In/Out.
+
+(*----------------------------------------------------------------*)
+function
+
+Data type function: User defined functions and builtin functions
+(with the exception of write, writeln) can be assigned to variables
+and used as arguments of other functions.
+Example:
+
+==> F := (cos,sin,tan).
+-: (cos, sin, tan)
+
+==> for i := 0 to length(F)-1 do
+        fun := F[i];
+        writeln(fun(pi/6));
+    end.
+0.866025404
+0.500000000
+0.577350269
+
+(*----------------------------------------------------------------*)
+record, pointer
+
+Besides the builtin data types, one can define new data types,
+using records and pointers. See below section 6) Type definitions,
+records, pointers
+
+(*----------------------------------------------------------------*)
+
+4) OPERATORS, EXPRESSIONS
+=========================
+
+The assignment operator :=
+--------------------------
+An assignment has the following form
+
+        <variable> := <expr>
+
+The expression <expr> is evaluated and assigned to <variable>. In general,
+<variable> is simply an identifier, but may also be an array component,
+a subarray or a record field.
+Examples:
+
+==> vec := (1,2,3,4).
+-: (1, 2, 3, 4)
+
+==> vec[2] := 10.
+-: 10
+
+==> vec.
+-: (1, 2, 10, 4)
+
+The data type of <expr> must be assignment compatible to the
+data type of <variable>. On top level (i.e. outside function definitions),
+<variable> may also be an undeclared identifier. Then the assignment is
+implicitly also a declaration of a variable of the proper data type.
+The assignment as a whole is an expression, whose value is the
+value of <expr>. The assignment operator is right associative (as in C).
+Therefore multiple assignments like the following are possible:
+
+         <variable1> := <variable2> := <expr>
+
+In assignments of arrays (e.g. vec1 := vec2) a new copy of the
+right hand side (vec2 in the example) is constructed and assigned
+(unlike the situation in C, this is not an assignment of pointers).
+Arrays of different lengths are assignment compatible.
+Examples:
+
+==> vec1 := (1,2,3).
+-: (1, 2, 3)
+
+==> vec2 := (4,5,6,7).
+-: (4, 5, 6, 7).
+
+Now, the assignment vec1 := vec2 is possible:
+
+==> vec1 := vec2.
+-: (4, 5, 6, 7).
+
+If we change vec2,
+
+==> vec2[2] := -1.
+-: -1
+
+the value of vec1 is untouched.
+
+==> vec2.
+-: (4, 5, -1, 7)
+
+==> vec1.
+-: (4, 5, 6, 7)
+
+
+Simultaneous Assignment
+-----------------------
+
+(<var1>,<var2>,...,<varn>) := (<expr1>,<expr2>,...,<exprn>)
+
+The expressions <expr1>,<expr2>,...,<exprn> are evaluated
+and then assigned to the variables <var1>,<var2>,...,<varn>
+respectively. For example, this can be used to swap two
+variables:
+
+==> x := pi.
+-: 3.14159265
+
+==> y := exp(1).
+-: 2.71828183
+
+==> (x,y) := (y,x).
+-: (2.71828183, 3.14159265)
+
+==> x.
+-: 2.71828183
+
+==> y.
+-: 3.14159265
+
+Without simultaneous assignment, you would have to use a temporary
+variable:
+
+==> temp := x; x := y; y := temp.
+
+As another example, consider the following compact code
+to calculate the Fibonacci numbers.
+
+==> function fibo(N: integer): integer;
+    var
+        u,v,k: integer;
+    begin
+        (u,v) := (1,0);
+        for k := 1 to N do
+            (u,v) := (v,u+v);
+        end;
+        return v;
+    end.
+-: fibo
+
+==> fibo(100).
+-: 3_54224_84817_92619_15075
+
+A more complicated example of swapping:
+
+==> vec := (1,2,3,4,5).
+-: (1, 2, 3, 4, 5)
+
+==> (vec[0..2],vec[3..4]) := (vec[2..4],vec[0..1]).
+-: ((3, 4, 5), (1, 2))
+
+==> vec.
+-: (3, 4, 5, 1, 2)
+
+
+Arithmetical operators
+----------------------
+        +, -, *, **, /, div, mod
+
++ and - are unary operators (if used as prefix) and binary operators
+(if used infix). As binary operators, they are left associative.
+The operands may be integers or reals. If one of the operands is
+an integer and the other operand is a real, an implicit conversion
+of the integer to a real number takes place.
+
+* denotes multiplication. It is a binary left associative infix
+operator, which may also be applied to integers or reals.
+
+** is the exponentiation operator. It is a binary, right associative
+infix operator. The operands may be integers or reals. If in the
+expression x**y the basis x is an integer and the exponent y is a
+non-negative integer, the result is again an integer; in all other
+cases the result is real. If the exponent is negative, the basis
+must be non-zero. If the exponent is a real, the basis must be
+positive.
+
+The binary, left associative infix operator / denotes floating
+point division. The operands may be integers or reals; the result
+is always a real. Division by zero is not allowed.
+
+div and mod are binary, left associative infix operators which may
+be applied only to integers and give an integer result.
+x div y returns the greatest integer less than or equal to x/y.
+The operator mod is defined by the equation
+        x = (x div y) * y + (x mod y)
+The divisor y must be non-zero.
+
+Vector operations
+-----------------
+The operators +, -, *, div and mod may also be applied to vectors,
+namely in the following forms:
+
+-vec, vec1 + vec2, vec1 - vec2, 
+lambda*vec, vec*lambda
+
+Here vec, vec1, vec2 are arrays of integers or reals and lambda
+is an integer or a real. The last two forms are the multiplication
+of the vector vec by the scalar lambda. vec1 and vec2 need not 
+have the same length; the shorter one is implicitely expanded to the
+greater length by appending zeroes. Example:
+
+    ==> -(1,1) + pi*(1,2,3).
+    -: (2.14159265, 5.28318531, 9.42477796)
+
+vec/lambda
+
+lambda must be a number /= 0. Divides all components of vec by lambda.
+Example:
+
+    ==> (100, 200, 300, 400)/1.95583.
+    -: (51.1291881, 102.258376, 153.387564, 204.516752)
+
+vec div N, vec mod N
+
+Here vec must be an array of integers and N an interger /= 0. If
+vec = (x1,x2,...,xn), the result is the vector with components
+xk div N resp xk mod N. Examples:
+
+    ==> (100, 200, 300) div 12.
+    -: (8, 16, 25)
+
+    ==> (100, 200, 300) mod 12.
+    -: (4, 8, 0)
+
+Relational operators
+--------------------
+        =               (equal)
+        /= or <>        (not equal)
+        <               (less)
+        <=              (less or equal)
+        >               (greater)
+        >=              (greater or equal)
+
+All relational operators are binary infix operators and return
+a boolean value (true or false). The operators = (equal) and
+/=, <> (two synonyms for 'not equal') may be applied to operands
+of arbitrary data types. With the operators <, <=, >, >= one can
+compare numbers (integer or real). They can also be applied to
+two characters or to two strings. In the latter cases the comparision
+is done according to the ASCII codes of the characters.
+Example:
+
+==> "Arthur" < "Anderson".
+-: false
+
+Boolean operators
+-----------------
+        not, and, or
+
+not is a unary prefix operator, whereas and, or are binary infix
+operatars. They may be applied to boolean arguments. The evaluation
+of the arguments of the binary operators and, or proceeds from left
+to right and is stopped as soon as the result is determined.
+Thus an expression like
+
+        u > 0 and v/u < 1
+
+is admissible, which would generate an error for u=0 if always both
+arguments of the and-operator were evaluated.
+
+Function calls
+--------------
+In ARIBAS, a function call has the form
+
+        foo(arg1,...,argn)
+
+where foo is the name of the function and arg1,...,argn is a comma
+separated list of the arguments, enclosed in parentheses. One
+must use parentheses even if the function has an empty argument
+list (as in the programming language C). The result of a function
+call can be used in other expressions, for example in arithmetical
+operations or assignments, as in
+
+        sin(pi/3)**2
+
+        x := exp(2)
+
+As in C, ARIBAS allows to ignore the result of a function call
+and to call a function only for its side effects.
+
+Operator precedence
+-------------------
+In complex expressions sometimes parentheses may be omitted by
+observing the precedence of operators.
+The following is a list of the various classes of operators according
+to decreasing binding force.
+
+1. exponentiation operator
+2. unary minus and unary plus
+3. multiplication and division operators *, /, div, mod
+4. binary plus and binary minus
+5. relational operators
+6. boolean operator not
+7. boolean operators and, or
+8. assignment operator
+
+For example,
+
+        bvar := not x < y and y < z+u
+
+is the same as
+
+        bvar := ((not (x < y)) and (y < (z+u)))
+
+(*---------------------------------------------------------------*)
+
+5) VARIABLE DECLARATIONS
+========================
+
+Variables in ARIBAS can be created at top level by assignments of
+the form
+        <identifier> := <value>
+If <value> is a literal of a certain data type, then the <identifier>
+becomes a variable of the same data type, initialized by this <value>.
+But <value> may also be an expression evaluating to an element of
+a certain data type. For example, the following assignments create
+two variables str1, str2 of data type string.
+
+        str1 := "ABCDE";
+        str2 := itoa(2**31 - 1);
+
+Variables can also be created by explicit variable declarations.
+Inside function definitions, declarations of local variables are
+obligatory.
+
+A global (i.e. top level) variable declaration has the following form:
+
+var
+    <identifier_list1>: <type_1>;
+    ...
+    <identifier_listn>: <type_n>;
+end
+
+Variable declarations inside function definitions are similar, only
+the symbol end is missing. It is replaced by the symbol begin marking
+the start of the function body.
+Here <identifier_listk> is a comma separated list of identifiers
+(the variable names). <type_k> is a type specifier like
+        integer
+        real
+        boolean
+        char
+        stack
+        file
+or a string, array, record or pointer type, which will be discussed later.
+Example:
+
+==> var
+        n,m: integer;
+        x: real;
+        c1,c2: char;
+        st: stack;
+    end.
+-: var
+
+After this variable declaration there exist integer variables n, m,
+a real variable x, two character variables c1, c2, and a stack
+variable st.
+In ARIBAS, a variable declaration also initializes the variables.
+Integers are initialized by 0, reals by 0.0, characters by ' '
+(the space character) and stacks by the empty stack. The default
+initializations can be changed using assignments in the variable
+declaration, as in the following example:
+
+==> var
+        n := 17;
+        x := 3.2;
+        ch := 'A';
+    end.
+-: var
+
+In this case the data types of the variables are derived from the
+initial values.
+
+Arrays, strings and byte_strings may be declared with or without
+length specification. The declaration with lengths is as in the
+following example:
+
+==> var
+        str: string[4];
+        bb: byte_string[8];
+        vec: array[10] of real;
+    end.
+-: var
+
+This declaration creates a string str of length 4 (consisting of 4
+space characters), a byte_string of length 8 (consisting of 8 zero
+bytes) and an array of reals of length 10, initialized with the
+elements 0.0.
+Please note that in ARIBAS strings, byte_strings and arrays of
+different length are assignment compatible. This implies, that
+a subsequent assignment
+
+==> str := concat("**",str,"__").
+-: "**    __"
+
+is possible.
+If the length specification is omitted, strings or arrays of
+length 0 are created.
+
+==> var
+        str: string;
+        bb: byte_string;
+        vec: array;
+    end.
+-: var
+
+==> str.
+-: ""
+
+==> bb.
+-: $
+
+==> vec.
+-: ()
+
+Also in this case, subsequent assignments of strings or arrays
+of positive length to these variables are allowed.
+
+The length specifications of arrays (strings, byte_strings) are not
+required to be constants. Also expressions evaluating to non-negative
+integers are admissible. Example:
+
+==> n := 5.
+-: 5
+
+==> var
+        vec: array[2*n+1];
+        mat: array[n] of array[n];
+    end.
+-: var
+
+==> vec.
+-: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+
+==> mat.
+-: ((0, 0, 0, 0, 0), (0, 0, 0, 0, 0), (0, 0, 0, 0, 0), (0, 0, 0, 0, 0), (0, 0,
+0, 0, 0))
+
+If the data type of an array is not specified, array of integer
+is assumed.
+
+Constant declarations
+=====================
+Constant declarations can be made (like variable declarations)
+at top level or inside function definitions. A top level
+constant definition has the form
+
+const
+    Identifier1 = Val_1;
+           ....
+    Identifiern = Val_n;
+end.
+
+For constant declarations inside function definitions, the symbol
+end is omitted; the declarations ends either with the beginning
+of the variable declaration (var) or the start of the function
+body (begin).
+
+The values Val_k may be literals or arithmetic or functional
+expressions involving builtin functions or functions defined by
+the user before the constant declaration.
+Example:
+
+==> const
+        Bound1 = 2**16 - 1;
+        Bound2 = round(exp(10));
+    end.
+-: const
+
+If one tries to assign a value to a constant, an error message
+is generated.
+
+==> Bound1 := 2**15.
+:= : non-constant symbol expected: Bound1
+-: error
+
+In order to use Bound1 again as a variable (on top level),
+make_unbound must be used.
+
+==> make_unbound(Bound1).
+-: true
+
+Now the assignment
+
+==> Bound1 := 2**15.
+-: 32768
+
+is possible.
+
+(*----------------------------------------------------------*)
+
+6) TYPE DEFINITIONS, RECORDS, POINTERS
+======================================
+
+In ARIBAS, the user can define her own data types.
+The easiest case is to define new names for composite data types.
+For example, if you have to work a lot with 3-dimensional vectors
+and 3x3-matrices with real components, you can make the top level
+type declaration
+
+    type
+        vector = array[3] of real;
+        matrix = array[3] of vector;
+    end;
+
+After this type definition you can use these new types in variable
+declarations at top level or inside function definitions, for example
+
+    var
+        A: matrix;
+        x,y: vector;
+    end;
+
+By the way, if this variable declaration occurs immediately after
+the type declaration, the two declarations can be merged to
+
+    type
+        vector = array[3] of real;
+        matrix = array[3] of vector;
+    var
+        A: matrix;
+        x,y: vector;
+    end;
+
+The new types can also be used in the formal parameter lists
+of function definitions or as result types of functions.
+For example, the following function calculates the tensor
+product of two vectors:
+
+    function tprod(x,y: vector): matrix;
+    var
+        A: matrix;
+        i,j: integer;
+    begin
+        for i := 0 to 2 do
+            for j := 0 to 2 do
+                A[i][j] := x[i]*y[j];
+            end;
+        end;
+        return A;
+    end.
+
+In the above examples, the new types were only synonyms for already
+existing data types (vector for array[3] of real and matrix for
+array[3] of array[3] of real), so one could do also without them.
+Substantially new data types can be constructed using records
+and pointers.
+
+Records
+-------
+A record is a structure consisting of several components which
+may have different data types. These components are the so called
+record fields, which can be accessed by field identifiers.
+For example, consider the following top level type and variable
+declaration:
+
+==> type
+        item = record
+            key: integer;
+            name: string;
+            data: byte_string;
+        end;
+    var
+        X,Y: item;
+    end.
+-: var
+
+This defines a new data type item. Such an item has three components:
+1) An integer in the field key, 2) a string in the field name and
+3) a byte_string in the field data. Also, two variables X, Y of type
+item have been created. Their fields are X.key, X.name, X.data
+resp. Y.key, Y.name and Y.data. They have been initialized by
+the default initializations of the types integer, string and
+byte_string, namely 0, "" (the empty string) and $ (the byte_string
+of length zero)
+
+==> X.
+-: &(0, "", $)
+
+In ARIBAS the external representation of a record is a comma
+separated list of its elements enclosed within &( and ).
+We can fill the fields of X with new values, for example
+
+==> X.key := 3; X.name := "gamma"; X.data := $AABB_80FF.
+-: $AABB_80FF
+
+Now
+
+==> X.
+-: &(3, "gamma", $AABB_80FF)
+
+One can work with the fields of X as with other variables of type
+integer, string or byte_string, e.g.
+
+==> X.key ** 4.
+-: 81
+
+==> toupper(X.name).
+-: "GAMMA"
+
+==> X.data[2].
+-: 128
+
+Records, like arrays, can be assigned as a whole. For example, after
+
+==> Y := X.
+-: &(3, "gamma", $AABB_80FF)
+
+the record Y has the same content as the record X.
+
+Records can also be declared in variable declarations (at top level
+or inside function definitions) without previous type declarations.
+For example
+
+==> var
+        R1, R2: record x,y,w,h: integer; end;
+    end.
+-: var
+
+declares two records R1, R2 (of anonymous type) with four integer
+fields x,y,w,h.
+
+Pointers
+--------
+Dynamical data structures can be constructed using pointers.
+In ARIBAS only pointers to records exist. The syntax is as in
+Modula-2. For example, a linked list of strings can be defined
+using the following type declaration.
+
+==> type
+        list = pointer to item;
+        item = record
+            name: string;
+            next: list;
+        end;
+    end.
+-: type
+
+(Note that in ARIBAS type declarations are allowed only at top level;
+however the defined types can afterwards also be used inside functions.)
+If after this type definition a variable of type list is defined,
+
+==> var
+        LL: list;
+    end.
+-: var
+
+LL is a pointer which points to nowhere (in ARIBAS it is initialized
+with the value nil).
+
+==> LL.
+-: nil
+
+We must use the procedure new to create a record (of type item) to
+which LL points.
+
+==> new(LL).
+-: &("", nil)
+
+The return value of new is the newly created record to which LL points.
+This record is now accesible as LL^.
+
+==> LL^.
+-: &("", nil)
+
+We can fill the name field of this item for example by
+
+==> LL^.name := "mueller".
+-: "mueller"
+
+Now
+
+==> LL^.
+-: &("mueller", nil)
+
+whereas
+
+==> LL.
+-: <PTR^30010045>
+
+(This external representation of the pointer cannot be used for
+assignments.)
+To append another item on top of the list LL of length 1, one can
+proceed as follows.
+
+==> var
+        ptr: list;
+    end.
+-: var
+
+==> new(ptr).
+-: &("", nil)
+
+==> ptr^.name := "bauer".
+-: "bauer"
+
+==> ptr^.next := LL.
+-: <PTR^30010045>
+
+==> LL := ptr.
+-: <PTR^3001007E>
+
+Now LL is a list of length 2; we have
+
+==> LL^.name.
+-: "bauer"
+
+==> LL^.next^.name.
+-: "mueller"
+
+Following Oberon (the successor to Modula-2), ARIBAS allows
+an abbreviation in dereferencing pointers: If Ptr is a pointer
+to a record and xx is a field identifier of this record, then
+Ptr^.xx may be abbreviated by Ptr.xx.
+So our above examples could have been written
+
+==> LL.name.
+-: "bauer"
+
+==> LL.next.name.
+-: "mueller"
+
+Note however the difference
+
+==> LL.next.
+-: <PTR^30010045>
+
+==> LL.next^.
+-: &("mueller", nil)
+
+
+7) CONTROL STRUCTURES
+=====================
+
+if then elsif else end
+while do end
+for to by do end
+break
+
+(*-----------------------------------------------------------------*)
+
+The if-statement
+----------------
+
+if <bool expr> then
+        <statement-list>
+elsif <bool expr> then
+        <statement-list>
+else
+        <statement-list>
+end;
+
+There may be more (or zero) elsif parts. The else part may also
+be absent.
+
+Example:
+
+function sign(x: real): integer;
+begin
+    if x > 0 then
+        return 1;
+    elsif x < 0 then
+        return -1;
+    else
+        return 0;
+    end;
+end;
+
+(*-----------------------------------------------------------------*)
+
+The while-loop
+--------------
+while <boolean expr> do
+    <statement-list>
+end;
+
+If <boolean expr> evaluates to true, the statement sequence
+<statement-list> is executed (this can change the value of
+<boolean expr>). If <boolean expr> is still true, <statement-list>
+is executed again. This is repeated until <boolean expr> becomes
+false or the while loop is left by a return or a break statement.
+
+(*-----------------------------------------------------------------*)
+
+The for-loop
+------------
+
+for <runvar> := <start> to <end> do
+    <statement-list>
+end;
+
+<runvar> must be an integer variable, <start> and <end> must be
+integer expressions. These are evaluated before the for loop is
+entered the first time. Then <statement-list> is executed with
+<runvar> set to <start>, <start>+1, ..., <end>. If <end> is less
+than <start>, <statement-list> is not executed at all and the
+for loop is skipped.
+
+for <runvar> := <start> to <end> by <incr> do
+    <statement-list>
+end;
+
+If there is an additional integer expression <incr>, this expression
+is also evaluated before entering the for loop. <incr> must evaluate
+to a non-zero integer. If <incr> is positive and <end> >= <start>,
+<statement-list> is executed for <runvar> = <start> + k*<incr>,
+k = 0,1,... as long as <start> + k*<incr> <= <end>.
+If <incr> is negative, <statement-list> is executed for
+<runvar> = <start> + k*<incr>, k = 0,1,... as long as
+<start> + k*<incr> >= <end>.
+
+Example:
+
+==> for k := 11 to 0 by -2 do
+        write(k,"; ");
+    end.
+
+produces the output
+    11; 9; 7; 5; 3; 1;
+
+(*-----------------------------------------------------------------*)
+break
+
+The command break causes (as in C) the immediate exit from a
+for or a while loop.
+
+Example:
+
+==> for x := 10**7+1 to 10**8 by 2 do
+        if factor16(x) = 0 then break; end;
+    end;
+    x.
+-: 10000019
+
+(*-----------------------------------------------------------------*)
+In ARIBAS there is no  repeat .. until  loop. Such a loop can always
+be substituted by a suitable while loop.
+
+(*-----------------------------------------------------------------*)
+
+8) FUNCTION REFERENCE
+=====================
+
+a) Functions for integer arithmetic
+===================================
+
+max_intsize
+set_printbase
+get_printbase
+sum
+product
+divide
+odd
+even
+abs
+max
+min
+inc
+dec
+gcd
+gcdx
+isqrt
+factorial
+mod_coshmult
+mod_pemult
+mod_inverse
+jacobi
+factor16
+prime32test
+rab_primetest
+rho_factorize
+cf_factorize
+qs_factorize
+ec_factorize
+
+bit operations
+
+(*----------------------------------------------------------------*)
+max_intsize(): integer;
+
+Returns the maximum number of decimal places of integers
+supported by ARIBAS. This number depends on the options
+when ARIBAS was compiled and is typically between 20000
+and 64000.
+
+(*----------------------------------------------------------------*)
+set_printbase(b: integer): integer;
+
+The integer b must be one of the numbers 2, 8, 10, 16. The effect
+of this function is that subsequent output of integers is done
+in base b representation. Return value is the newly set print base.
+(If b is not admissible, the old print base is not altered.)
+Example:
+
+==> set_printbase(8).
+-: 0o10
+
+==> 255.
+-: 0o377
+
+(*----------------------------------------------------------------*)
+get_printbase(): integer;
+
+Returns the print base which is currently used.
+
+(*----------------------------------------------------------------*)
+sum(vec: array of integer): integer;
+sum(vec: array of real): real;
+product(vec: array of integer): integer;
+product(vec: array of real): real;
+
+Returns the sum resp. the product of all components of vec.
+
+(*----------------------------------------------------------------*)
+divide(x,y: integer): array[2];
+
+Returns a pair (q,r) of integers such that 
+	q = x div y  and  r = x mod y. 
+The argument \cc{y} must be non-zero.
+Example:
+
+==> divide(100,7).
+-: (14, 2)
+
+==> divide(-100,7).
+-: (-15, 5)
+
+(*----------------------------------------------------------------*)
+even(x: integer): boolean;
+odd(x: integer): boolean;
+
+Tests if x is even resp. odd.
+
+(*----------------------------------------------------------------*)
+max(x1,...,xn: integer): integer;
+max(x1,...,xn: real): real;
+min(x1,...,xn: integer): integer;
+min(x1,...,xn: real): real;
+
+Returns the maximum (resp. minimum) of the arguments x1,...,xn.
+
+(*----------------------------------------------------------------*)
+max(vec: array of integer): integer;
+max(vec: array of real): real;
+min(vec: array of integer): integer;
+min(vec: array of real): real;
+
+Returns the maximum (resp. minimum) of all components of vec.
+
+(*----------------------------------------------------------------*)
+abs(x: integer): integer;
+abs(x: real): real;
+
+Returns the absolute value of x.
+
+(*----------------------------------------------------------------*)
+inc(var x: integer [; delta: integer]): integer;
+
+Increases the integer variable x by delta (by default delta = 1)
+und returns the increased value of x. Functionally equivalent to
+x := x + delta.
+
+(*----------------------------------------------------------*)
+dec(var x: integer [; delta: integer]): integer;
+
+Decreases the integer variable x by delta (by default delta = 1)
+und returns the decreased value of x. Functionally equivalent to
+x := x - delta.
+
+(*----------------------------------------------------------*)
+gcd(x1,...,xn: integer): integer;
+
+Returns the greatest common divisor of the integers x1,x2,...,xn.
+For n = 1, one has gcd(x) = abs(x); if n = 0, then gcd() = 0.
+
+gcd(vec: array of integer): integer;
+
+Returns the greatest common divisor of all components of vec.
+
+(*----------------------------------------------------------*)
+gcdx(x,y: integer; var u,v: integer): integer;
+
+Returns the greatest common divisor d of x, y.
+At the same time, the variables u and v are set to values
+such that
+        d = u*x + v*y
+Example:
+
+==> gcdx(5,17,u,v).
+-: 1
+
+==> (u,v).
+-: (7, -2)
+
+(*----------------------------------------------------------*)
+mod_inverse(x, mm: integer): integer;
+
+If x and mm are reatively prime, this function returns the inverse
+of x modulo mm. Otherwise the return value is 0.
+Examples:
+
+==> mod_inverse(17,100).
+-: 53
+
+==> mod_inverse(18,100).
+-: 0
+
+(*----------------------------------------------------------*)
+isqrt(x: integer): integer;
+
+x must be a non-negative integer. Returns the greatest integer
+y such that y*y <= x.
+
+(*----------------------------------------------------------*)
+factorial(n: integer): integer;
+
+n must be a non-negative integer. Returns the factorial of n,
+(usually denoted by n!). Example:
+
+==> factorial(8).
+-: 40320
+
+(*----------------------------------------------------------*)
+mod_coshmult(x,s,mm: integer): integer;
+
+If x is an integer and xi a number such that cosh(xi) = x,
+then cosh(s*xi) is an integer for all natural numbers s.
+The function returns this number modulo mm.
+The result can be obtained by the following recursively
+defined (Lucas) sequence:
+        a(0) := 1;
+        a(1) := x;
+        a(k+2) := 2*x*a(k+1) - a(k);
+The result is the number a(s) mod mm.
+This function is useful to implement the (p+1)-factorization method.
+
+(*----------------------------------------------------------*)
+mod_pemult(x,s,a,mm: integer): array[2] of integer;
+
+Let pe be the Weierstrass pe-function on the elliptic curve E(a)
+        y*y = x*x*x + a*x*x + x
+and let xi be a point on the curve with pe(xi) = x. The s*xi is
+a point of E(a) (with respect to the abelian group structure on the
+elliptic curve). If s*xi is not a pole of pe, then pe(s*xi) = u/v
+is a rational number. (We may suppose that u and v are relatively
+prime.) If v is relatively prime to mm, the function
+mod_pemult(x,s,a,mm) returns (z,1), where z is an integer
+satisfying z*v = u mod mm (i.e. we have z = u/v in Z/mmZ).
+If v and mm have a greatest common divisor d > 1, the function
+returns (d,0). If s*xi is a pole of pe, the return value is (mm,0).
+This function is useful for the factorization with elliptic
+curves.
+
+(*----------------------------------------------------------*)
+factor16(x [,x0 [,x1]]: integer): integer;
+
+factor16(x) seeks a prime divisor p of x with p < min(2**16,x).
+If such a prime divisor exists, the smallest one is returned.
+Otherwise the function returns 0. If the optional arguments x0
+resp. x0 and x1 are supplied, only prime divisors p satisfying the
+additional conditions p >= x0 resp. x0 <= p <= x1 are considered.
+Examples:
+
+==> factor16(2**32 + 1).
+-: 641
+
+==> factor16(2**32 + 1, 642).
+-: 0
+
+(*----------------------------------------------------------*)
+prime32test(x: integer): integer;
+
+Tests if abs(x) is a prime number < 2**32.
+If this is true, the function returns 1.
+If abs(x) < 2**32, but is not prime, 0 is returned.
+For abs(x) >= 2**32, the function returns -1.
+
+(*----------------------------------------------------------*)
+rab_primetest(x: integer): boolean;
+
+Performs the Rabin probabilistic prime test. If the function
+returns false, the number is certainly composite. A 'random'
+number x, for which factor16(x) = 0 and rab_primetest(x) = true
+is prime with high probability. An exception are numbers constructed
+purposely to fool the Rabin prime test. But also for these
+numbers the error probability is less than 1/4.
+To decrease the error probability, one can repeat the test
+several times.
+
+(*----------------------------------------------------------*)
+next_prime(x: integer): integer;
+
+Calculates the smallsest prime p >= x. If x > 2**32, p is
+only a prime with high probabilty; it has no prime divisors < 2**16
+and has passed 10 strong pseudo prime tests with random bases.
+
+(*----------------------------------------------------------*)
+jacobi(a,m: integer): integer;
+
+Returns the Jacobi symbol of a over m. The module m must be
+an odd number; a may be an arbitrary integer, the result depends
+only on the residue class of a modulo m. If a and m are not
+relatively prime, the return value is 0, otherwise it is
+1 or -1. If p is an odd prime and a not a multiple of p, then
+jacobi(a,p) = 1 if and only if a is a quadratic residue
+modulo p.
+
+(*----------------------------------------------------------*)
+rho_factorize(x:integer [; b: integer]): integer;
+
+Tries to factorize x using Pollard's rho-algorithm. The optional
+argument b is a bound for the maximal number of steps (default
+value b = 2**16). If the algorithm finds a factor, it is returned,
+in case of failure the return value is 0. The number x should
+be free of small prime factors (e.g. < 1000). Then, if x has
+a prime factor p < sqrt(x), the algorithm will in general find
+a factorization of x if b is a small multiple of sqrt(p).
+If the return value y is > 1 and < x, it is certainly a factor
+of x, but not necessarily prime.
+
+(*----------------------------------------------------------*)
+cf_factorize(x: integer [; mm: integer]): integer;
+
+Tries to factorize x using the Morrison-Brillhart continued
+fraction factorization algorithm. The run time does not depend
+on the size of the prime factors of x. (Hence, if it is known
+that x has small prime factors, another factorization method
+should be used.) If the period of the continued fraction of
+sqrt(x) is too short, the factorization will fail. In this case
+one should supply a second argument, which must be an integer
+mm with 1 <= mm < 1024. Then the continued fraction expansion
+of sqrt(mm*x) will be used.
+
+(*----------------------------------------------------------*)
+qs_factorize(x: integer): integer;
+
+Tries to factorize x using the multiple polynomial quadratic
+sieve factorization algorithm. The run time does not depend
+on the size of the prime factors of x. (Hence, if it is known
+that x has small prime factors, another factorization method
+like rho_factorize should be used.) In general, qs_factorize
+is faster than cf_factorize.
+
+(*----------------------------------------------------------*)
+ec_factorize(x: integer[; m: integer]): integer;
+
+Tries to factorize x by the elliptic curve method. The optional 
+argument m is a bound for the number of elliptic curves used. 
+If the algorithm finds a factor, it is returned, in case of 
+failure the return value is 0.  If the return value y is > 1, 
+it is certainly a factor of x, but not necessarily prime.
+
+ec_factorize(x: integer; pbounds: array[2] [; m: integer]): integer;
+
+You may explicitely prescribe the prime bound and the bigprime bound 
+by the second argument in form of a 2-dimensional vector  
+pbounds = (bound1,bound2). The constant bound1 must be < 2**16 
+and bound2 < 2**24. The third optional argument m is the maximal 
+number of elliptic curves used. In the following example the 8th 
+Fermat number is factorized.
+
+==> f8 := 2**256 + 1. 
+-: 115_79208_92373_16195_42357_09850_08687_90785_32699_84665_64056_40394_ 
+57584_00791_31296_39937 
+ 
+==> q := ec_factorize(f8,(8000,64000)). 
+ 
+EC factorization, prime bound 8000, bigprime bound 64000 
+working .:.:.:.:.:.:.:.:.:.:.:.:.:.:.:.:.:.:.: 
+factor found with curve parameter 11693151 and bigprime 40177 
+ 
+-: 1_23892_63615_52897 
+ 
+==> p := f8 div q. 
+-: 93_46163_97153_57977_76916_35581_99606_89658_40512_37541_63818_85802_80321 
+ 
+==> rab_primetest(q). 
+-: true 
+ 
+==> rab_primetest(p). 
+-: true
+
+The algorithm ec_factorize is best suited for large integers which 
+have a relatively small prime factor (like f8).
+One can forbid the execution of the big prime variation by setting 
+the second component in the vector pbounds equal to 0.
+
+==> ec_factorize(2**101-1,(4000,0),200). 
+ 
+EC factorization with prime bound 4000  
+working .......................................................... 
+factor found with curve parameter 11017293 and prime bound 2816 
+ 
+-: 743_23392_08719
+
+ec_factorize(x, [pbounds, m,] 0): integer;
+
+With a last argument 0, the progress report is suppressed 
+and the algorithm works quietly.
+
+==> ec_factorize(2**67-1,0). 
+-: 193707721
+
+(*----------------------------------------------------------*)
+gfp_sqrt(p,x: integer): integer;
+
+p must be an odd prime and x an integer which is a square modulo p, 
+i.e. jacobi(x,p) /= -1. The function returns a square root of 
+x modulo p, that is, a square root in the field GF(p).
+Example:
+
+==> p := next_prime(10**6). 
+-: 1000003 
+ 
+==> x := 10. 
+-: 10 
+ 
+==> jacobi(x,p). 
+-: 1 
+ 
+==> y := gfp_sqrt(p,x). 
+-: 394215 
+ 
+==> y**2 mod p. 
+-: 10 
+
+(*----------------------------------------------------------*)
+
+Bit operations for integers
+
+bit_test
+bit_set
+bit_clear
+bit_shift
+bit_not
+bit_and
+bit_or
+bit_xor
+bit_length
+
+The bit operations can be applied to all integers, positive or negative.
+Bit operations refer to the binary representation of integers.
+Negative integers are thought to be in two's complement representation,
+where the sign bit extends to infinity at the left hand side. For example,
+the bit pattern of the two's complement representation of -1 is
+
+      ......11111111111111111111111111111111
+
+(*----------------------------------------------------------------*)
+bit_test(x,n: integer): integer;
+
+Returns 1, if the bit in position n of x is set, otherwise returns 0.
+The count of positions begins with 0 (the bit i position n has
+weigth 2**n).
+For example, bit_test(x,0) = 1 if and only if x is odd.
+
+(*----------------------------------------------------------------*)
+bit_set(x,n: integer): integer;
+
+Sets the bit in position n of the integer x equal to 1 and returns
+the modified integer. Example:
+
+==> bit_set(16,2).
+-: 20
+
+(*----------------------------------------------------------------*)
+bit_clear(x,n: integer): integer;
+
+Clears the bit in position n of the integer x (i.e. sets it equal
+to 0) and returns the modified integer. Examples:
+
+==> bit_clear(20,2).
+-: 16
+
+==> bit_clear(-1,0).
+-: -2
+
+(*----------------------------------------------------------------*)
+bit_shift(x,n: integer): integer;
+
+The number n may be positive, negative or zero. If n >= 0,
+bit_shift(x,n) is a shift of the bit representation of x of
+n positions to the left (i.e. in direction of more significant
+bits); this is equivalent to a multiplication by 2**n.
+If n < 0, this is a shift of abs(n) positions to the right
+(i.e. in direction of less significant bits); equivalent to
+x div 2**abs(n). Examples:
+
+==> bit_shift(-7,3).
+-: -56
+
+==> bit_shift(-7,-1).
+-: -4
+
+==> bit_shift(-7,-100).
+-: -1
+
+(*----------------------------------------------------------------*)
+bit_not(x: integer): integer;
+
+Inverts all bits of x. Equivalent to -x-1.
+
+(*----------------------------------------------------------------*)
+bit_and(x,y: integer): integer;
+bit_or(x,y: integer): integer;
+bit_xor(x,y: integer): integer;
+
+Bitwise and, or resp. exclusive or of x and y.
+For example, bit_and(x,3) is equivalent to x mod 4.
+
+(*----------------------------------------------------------------*)
+bit_length(x: integer): integer;
+
+Returns the smallest natural number n such that abs(x) < 2**n
+
+(*----------------------------------------------------------------*)
+bit_count(x: integer): integer;
+
+Returns the number of bits equal to 1 in the binary 
+representation of abs(x).
+Examples:
+
+==> bit_count(0).
+-: 0
+
+==> bit_count(255).
+-: 8
+
+==> x := 10001.
+-: 10001
+
+==> write(x:base(2)).
+100111_00010001
+-: 1
+
+==> bit_count(x).
+-: 6
+
+==> bit_count(-x).
+-: 6
+
+(*----------------------------------------------------------------*)
+
+a1) Functions for arithmetic in GF(2**n)
+========================================
+
+gf2n_init
+gf2n_fieldpol
+gf2n_degree
+gf2nint
+integer
+max_gf2nsize
+gf2n_trace
+
+(*----------------------------------------------------------*)
+
+gf2n_init(deg: integer): integer;
+
+Initializes the field GF(2**deg), which is an extension
+of degree deg of the field with two elements GF(2).
+Return value is an integer f, representing an irreducible
+polynomial of degree deg. If the integer f in binary
+representation is
+
+    f = sum(a_i * 2**i, i=0,1,...,deg), a_i = 0,1,
+
+then the corresponding polynomial f(X) in GF(2)[X] is
+
+    f(X) = sum(a_i * X**i, i=0,1,...,deg).
+
+The field GF(2**deg) is constructed as GF(2)[X]/(f(X)).
+Example:
+
+==> gf2n_init(53).
+-: 9_00719_92547_41063
+
+==> write(_:base(2)).
+100000_00000000_00000000_00000000_00000000_00000000_01000111
+-: 1
+
+In this case the irreducible polynomial serving to construct
+the field GF(2**53) is
+
+    f(X) = X**53 + X**6 + X**2 + X + 1.
+
+
+(*----------------------------------------------------------*)
+
+gf2n_fieldpol(): integer;
+
+Returns the irreducible polynomial defining the field GF(2**n)
+which is active at present. The polynomial is represented
+by an integer; see description of the function gf2n_init().
+
+(*----------------------------------------------------------*)
+
+gf2n_degree(): integer;
+
+Returns the degree of the field GF(2**n) which is currently active.
+
+(*----------------------------------------------------------*)
+gf2nint(x: integer): gf2nint;
+integer(x: gf2nint): integer;
+
+Conversion from data type integer to gf2nint and vice versa.
+
+(*----------------------------------------------------------*)
+
+max_gf2nsize(): integer;
+
+Returns the maximal degree of a field GF(2**n) supported by the
+present version of ARIBAS.
+
+(*----------------------------------------------------------*)
+
+gf2n_trace(z: gf2nint): integer;
+
+Returns the trace 0 or 1 of an element z in GF(2**n).
+The trace of z is 0 if and only if the quadratic equation
+x**2 + x = z has a solution x in GF(2**n).
+
+(*----------------------------------------------------------*)
+
+b) Functions for real arithmetic and analysis
+=============================================
+
+floor
+trunc
+frac
+round
+set_floatprec
+get_floatprec
+decode_float
+float
+sqrt
+exp
+log
+sin
+cos
+tan
+arctan
+arctan2
+arcsin
+arccos
+pi
+
+(*----------------------------------------------------------------*)
+floor(x: real): integer;
+
+Returns the greatest integer n <= x. Examples:
+
+==> floor(pi).
+-: 3
+
+==> floor(-pi).
+-: -4
+
+(*----------------------------------------------------------------*)
+trunc(x: real): integer;
+
+If x >= 0, equivalent to floor(x).
+For x < 0, trunc is defined by trunc(x) = -trunc(-x)
+Examples:
+
+==> trunc(pi).
+-: 3
+
+==> trunc(-pi).
+-: -3
+
+(*----------------------------------------------------------------*)
+frac(x: real): real;
+
+Defined by the equation
+        x = trunc(x) + frac(x)
+
+Examples:
+
+==> frac(1.23).
+-: 0.230000000
+
+==> frac(-1.23).
+-: -0.230000000
+(*----------------------------------------------------------------*)
+round(x: real): integer;
+
+Rounds x to the next integer n. If x has exactly the distance 1/2
+from two integers, rounds to the even integer. Examples:
+
+==> round(pi).
+-: 3
+
+==> round(3.5).
+-: 4
+
+==> round(2.5).
+-: 2
+
+(*----------------------------------------------------------------*)
+set_floatprec(bb: integer): integer;
+set_floatprec(Floattype): integer;
+
+This function serves to set the precision (in bits) which is
+used for subsequent calculations with reals. By default,
+a precision of 32 bits is used (corresponding to 9-10
+decimal places), but it can be set to several higher values up
+to an implementation dependent limit, which can be determined
+by the function max_floatprec().
+The argument of set_floatprec is either an integer bb, 
+indicating the number of bits (which is rounded to the next higher 
+available precision, if necessary) or a symbol Floattype, for 
+which the following choice is available:
+
+        single_float:    32 bits
+        double_float:    64 bits
+        long_float:     128 bits
+
+The function returns the new float precision. Example:
+
+==> set_floatprec(double_float).
+-: 64
+
+==> sqrt(2).
+-: 1.41421356237309505
+
+==> set_floatprec(200).
+-: 256
+
+==> 2**0.5.
+-: 1.41421_35623_73095_04880_16887_24209_69807_85696_71875_37694_80731_76679_
+73799_07324_7846
+
+(*----------------------------------------------------------------*)
+get_floatprec(): integer;
+get_floatprec(x: real): integer;
+
+In the first form (without arguments), the function returns the current
+float precision (in bits, a number between 32 and max_floatprec(),
+which is implementation dependent, typically 1024 or 4096).
+The default float precision of ARIBAS is 32 bits. If the argument 
+is a real number x, the precision of x is returned.
+Examples:
+
+==> set_floatprec(50).
+-: 64
+
+==> get_floatprec(1/3).
+-: 64
+
+==> get_floatprec(pi).
+-: 4096
+
+(*----------------------------------------------------------------*)
+max_floatprec(): integer;
+
+This function returns the maximum floating point precision
+(in bits) which is available in the current implementation
+of ARIBAS.
+Example:
+
+==> max_floatprec().
+-: 4096
+
+The actually used floating point precision can be retrieved
+by the function get_floatprec; it can be changed using the 
+function set_floatprec.
+
+(*----------------------------------------------------------------*)
+decode_float(x: real): array[2] of integer;
+
+For a real number x, the function decode_float(x) returns a pair
+(mant, expo) of integers, reflecting the internal representation of x.
+The following equation holds:
+                x = mant * 2**expo
+Example:
+
+==> set_printbase(16).
+-: 0x10
+
+==> decode_float(-1/3).
+-: (-0xAAAA_AAAA, -0x21)
+
+(*----------------------------------------------------------------*)
+float(x: integer [; Floattype]): real;
+float(x: real [; Floattype]): real;
+
+Floattype must be one of the symbols single_float, double_float, 
+long_float, or an integer bb indicating the desired float precision.  
+If this argument is not given, the current float precision is assumed. 
+The function transforms the number x to data type real with 
+float precision Floattype.
+Examples: Suppose that the current float precision is single_float.
+
+==> float(5).
+-: 5.00000000
+
+==> x := 1/10;
+    y := float(x,long_float).
+-: 0.100000000
+
+==> set_printbase(16).
+-: 0x10
+
+==> decode_float(x).
+-: (0xCCCCCCCC, -0x23)
+
+==> decode_float(y).
+-: (0xCCCC_CCCC_0000_0000_0000_0000_0000_0000, -0x83)
+
+(*----------------------------------------------------------------*)
+pi
+
+The constant pi is stored internally with the maximal available 
+precision (which can be determined by the function max_floatprec()), 
+although this is not shown in the printed representation, if the 
+currently used precision is smaller.
+
+==> pi.
+-: 3.14159265
+
+==> get_floatprec(pi).
+-: 4096
+
+Note however, that calculations are always done with the current 
+float precision. For example, if the current float precision is 
+single_float = 32 bits,
+
+==> x := 1*pi.
+-: 3.14159265
+
+==> get_floatprec(x).
+-: 32
+
+==> x = pi.
+-: false
+
+(*----------------------------------------------------------------*)
+sqrt(x: real): real;
+exp(x: real): real;
+log(x: real): real;
+sin(x: real): real;
+cos(x: real): real;
+tan(x: real): real;
+arctan(x: real): real;
+arcsin(x: real): real;
+arccos(x: real): real;
+
+The functions sqrt (square root), exp, log (natural logarithm),
+sin, cos, tan, arctan, arcsin, arccos all expect one real argument
+and return a real. If the argument is an integer, it is automatically
+transformed to a real.
+Example:
+
+==> log(2).
+-: 0.693147180
+
+==> set_floatprec(100).
+-: 128
+
+==> log(2).
+-: 0.69314_71805_59945_30941_72321_21458_17656_81
+
+==> exp(_).
+-: 2.00000_00000_00000_00000_00000_00000_00000_0
+
+(*----------------------------------------------------------------*)
+arctan2(y,x: real): real;
+
+The two numbers x,y may not be simultaneously 0. The function
+returns an angle phi with -pi < phi <= pi, satisfying
+        x = r * cos(phi);
+        y = r * sin(phi);
+where r = sqrt(x*x + y*y).
+If x > 0, then arctan2(y,x) = arctan(y/x).
+
+Example:
+==> arctan2(1,0).
+-: 1.57079633
+
+(*----------------------------------------------------------------*)
+
+c) Random
+=========
+
+random
+random_seed
+
+(*----------------------------------------------------------*)
+random(n: integer): integer;
+
+Returns an integer pseudo random number z with 0 <= z < x.
+
+(*----------------------------------------------------------*)
+random(x: real): real;
+
+Returns a real pseudo random number z with 0 <= z < x.
+
+(*----------------------------------------------------------*)
+random_seed([s: integer]): integer;
+
+random_seed without an argument returns the present state of the
+random generator (which is an integer z with 2**48 <= z < 2**49).
+
+With an integer argument s, the state of the random generator is
+set to a value z such that z = s mod 2**48 and 2**48 <= z < 2**49.
+In this way one can generate reproducible values of the random
+function (for test purposes).
+
+(*----------------------------------------------------------*)
+
+d) Characters, strings
+======================
+
+chr
+ord
+length
+concat
+toupper
+tolower
+string_split
+substr_index
+string_scan
+itoa
+ftoa
+float_ecvt
+atoi
+atof
+
+(*----------------------------------------------------------*)
+chr(n: integer): char;
+ord(ch: char): integer;
+
+The function chr generates the character with ASCII-Code n (0 <= n < 256),
+ord is the inverse function of chr.
+Examples:
+
+==> chr(63).
+-: '?'
+
+==> ord('?').
+-: 63
+
+(*----------------------------------------------------------*)
+length(s: string): integer;
+
+Returns the length of the string s. (The function length can also
+be applied to byte_strings, arrays, stacks and files.)
+
+(*----------------------------------------------------------*)
+concat(arg0, arg1, ... , argn): string;
+
+The function concat expects one or more arguments which must be
+strings or characters. The result is a string which is the
+concatenation of all arguments.
+Example:
+
+==> concat("string",'_',"split").
+-: "string_split"
+
+(*----------------------------------------------------------*)
+toupper(str: string): string;
+toupper(ch: character): character;
+
+Transforms a string resp. a character to upper case. Only
+characters between 'a' and 'z' are affected. All others remain
+untouched. Example:
+
+==> toupper("Zapp-up!").
+-: "ZAPP-UP!"
+
+(*----------------------------------------------------------*)
+tolower(str: string): string;
+tolower(ch: character): character;
+
+Transforms a string resp. a character to lower case. Only
+characters between 'A' and 'Z' are affected. All others remain
+untouched.
+
+(*----------------------------------------------------------*)
+string_split(str: string [; sep: string]): array of string;
+
+Splits the string str into one or more parts and returns a vector
+whose components are these parts. The splitting uses as separators
+the characters contained in the string sep. If the argument sep
+is not supplied, SPACE, TAB, CR and NEWLINE are used by default.
+Examples;
+
+==> string_split("abc def").
+-: ("abc", "def")
+
+==> string_split("abc def;xxx=yyy",";= ").
+-: ("abc", "def", "xxx", "yyy")
+
+(*----------------------------------------------------------*)
+substr_index(str, str1: string): integer;
+
+Searches for an occurrence of str1 as a substring of str
+and returns the position (the count begins with 0). If
+str1 does not occur as a substring of str, -1 is returned.
+Examples:
+
+==> substr_index("string_split","split").
+-: 7
+
+==> substr_index("string_split","Split").
+-: -1
+
+Instead of strings, str or str1 may also be byte_strings.
+
+(*----------------------------------------------------------*)
+string_scan(str, set: string [; mode: boolean]): integer;
+
+When mode=true (default), searches for the first occurrence of
+a character from the string set in the string str and returns
+its position. If no character from set occurs in str, -1 is
+returned. Example:
+
+==> str := "vec := (1,2,3)".
+-: "vec := (1,2,3)"
+
+==> string_scan(str,"+-()").
+-: 7
+
+==> string_scan(str,"+-[]").
+-: -1
+
+If the string set consists of a single character, then
+string_scan(str,set) is equivalent to substr_index(str,set).
+
+When mode=false, searches for the first occurence in str of a 
+character which is not in the string set and returns its position.
+If no such character is found, -1 is returned. Example:
+
+==> digits := "0123456789".
+-: "0123456789"
+
+==> string_scan("123 + 456",digits,false).
+-: 3
+
+==> string_scan("123456",digits,false).
+-: -1
+
+Instead of strings, str or set may also be byte_strings.
+
+(*----------------------------------------------------------*)
+itoa(x: integer [; base: integer]): string;
+
+The integer x is converted to a string, giving the textual
+representation of this integer. The second optional argument is
+the base to be used, which may have one of the values 2,8,10,16.
+By default, base 10 is used.
+Example:
+
+==> itoa(1234).
+-: "1234"
+
+==> itoa(1234,16).
+-: "4D2"
+
+(*----------------------------------------------------------*)
+ftoa(x: real): string;
+
+The real number x is converted to a string.
+Examples:
+
+==> ftoa(1/239).
+-: "0.00418410042"
+
+==> ftoa(pi*10**100).
+-: "3.14159265E100"
+
+(*----------------------------------------------------------*)
+atoi(s: string [; var len: integer]): integer;
+
+A string s, representing an integer, is transformed to this integer.
+The function may be called with an optional second variable argument
+len. The function stores in len an integer, which in general is
+the length of the string s. If len < length(s), then only the substring
+containing the first len characters of s is an admissible representation
+of an integer. In particular len=0 indicates a non-admissible string.
+Examples:
+
+==> atoi("1234").
+-: 1234
+
+==> atoi("0x1234").
+-: 4660
+
+==> atoi("-1234 5678",len).
+-: -1234
+
+==> len.
+-: 5
+
+==> atoi("_1234",len).
+-: 0
+
+==> len.
+-: 0
+
+(*----------------------------------------------------------*)
+atof(s: string [; var len: integer]): real;
+
+A string s, representing a real number, is transformed to this real.
+A second optional variable argument len has a meaning analogous
+to the function atoi.
+
+(*----------------------------------------------------------*)
+float_ecvt(x: real; ndig: integer; var decpos, sign: integer): string;
+
+The real x is transformed to a string of length ndig. The string
+contains only digits. The position of the decimal point is returned
+in the variable paramenter decpos (decpos < 0 means that the decimal
+point is to the left of the beginning of the string). The sign of x
+is returned in the variable parameter sign (sign = 0 means x >= 0,
+sign /= 0 means x < 0).
+float_ecvt is analogous to the UNIX C-function ecvt.
+
+Example:
+
+==> float_ecvt(pi,10,decpos,sign).
+-: "3141592654"
+
+==> decpos.
+-: 1
+
+==> sign.
+-: 0
+
+(*----------------------------------------------------------*)
+
+e) Byte_strings
+===============
+
+length
+byte_string
+string
+cardinal
+integer
+
+(*----------------------------------------------------------*)
+length(b: byte_string): integer;
+
+Returns the length of the byte_string b.
+
+(*----------------------------------------------------------*)
+cardinal(b: byte_string): integer;
+
+Transforms a byte_string into a non-negative integer. The components
+of the byte_string are considered as the digits of an integer with
+respect to base 256, where the leftmost byte of the byte_string
+corresponds to the least significant digit. Therefore the function
+returns the integer
+
+        sum(b[i] * 256**i: 0 <= i < length(b)).
+
+Example:
+
+==> cardinal($000A).
+-: 2560
+
+(*----------------------------------------------------------*)
+integer(b: byte_string): integer;
+
+Transforms a byte_string into an integer. The components
+of the byte_string are considered as the digits of an integer
+with respect to base 256 in two's complement representation.
+If len := length(b) and the most significant bit of b[len-1] is not
+set, then integer(b) = cardinal(b). But if the most significant bit
+of b[len-1] is set, then
+
+        integer(b) = cardinal(b) - 256**len.
+
+Examples:
+
+==> integer($5470).
+-: 28756
+
+==> integer($5480).
+-: -32684
+
+(*----------------------------------------------------------*)
+byte_string(x: integer): byte_string;
+byte_string(x: integer; len: integer): byte_string;
+
+byte_string(x) transforms an integer x into a byte_string
+of length equal to byte_length(x). It is the inverse function of
+
+        integer(bb: byte_string): integer;
+
+If a second argument len is given and len < byte_length(x),
+then the byte_string is truncated and only the len least significant
+bytes are retained. If len > byte_length(x), bytes of value 0
+(if x >= 0) resp. 0xFF (if x < 0) are added, so that the total
+length of the resulting byte_string equals len.
+Examples:
+
+==> set_printbase(16).
+-: 0x10
+
+==> x := 65111.
+-: 0xFE57
+
+==> byte_string(x).
+-: $57FE
+
+==> byte_string(-x).
+-: $A901
+
+==> byte_string(x,4).
+-: $57FE_0000
+
+==> byte_string(-x,4).
+-: $A901_FFFF
+
+==> byte_string(x,1).
+-: $57
+
+==> 17**17.
+-: 0x2C_D843_CB47_6437_0911
+
+==> byte_string(_).
+-: $1109_3764_47CB_43D8_2C
+
+(*----------------------------------------------------------*)
+byte_string(s: string): byte_string;
+
+Transforms an ordinary (text) string into a byte_string.
+The components of the resulting byte_string are the ASCII codes
+of the characters of s.
+Example:
+
+==> byte_string("string").
+-: $7374_7269_6E67
+
+(*----------------------------------------------------------*)
+string(b: byte_string): string;
+
+Transforms a byte_string into a text string; inverse function
+of byte_string. Be careful if some components of the byte_string
+b are codes of non-printable control characters.
+
+(*----------------------------------------------------------*)
+
+Bit operations for byte_strings
+-------------------------------
+mem_btest
+mem_bset
+mem_bclear
+mem_not
+mem_and
+mem_or
+mem_xor
+mem_shift
+mem_bitswap
+mem_byteswap
+
+All these bit operations, with the exception of mem_btest,
+change its first variable argument, which is a byte_string,
+and return this modified byte_string.
+The return value is only interesting when the functions
+are used interactively.
+
+(*----------------------------------------------------------------*)
+mem_btest(var b: byte_string; n: integer): integer;
+
+Returns the value 1 or 0 of the bit at position n in the
+byte_string b (position is zero based).
+
+(*----------------------------------------------------------------*)
+mem_bset(var b: byte_string; n: integer): byte_string;
+
+Sets the bit at position n in the byte_string b to 1
+and returns the modified byte_string.
+
+(*----------------------------------------------------------------*)
+mem_bclear(var b: byte_string; n: integer): byte_string;
+
+Clears the bit at position n in the byte_string b (i.e. sets it to 0)
+and returns the modified byte_string.
+
+(*----------------------------------------------------------------*)
+mem_not(var b: byte_string): byte_string;
+
+Inverts all bits in the byte_string b and returns the
+modified byte_string.
+
+(*----------------------------------------------------------------*)
+mem_and(var b1,b2: byte_string): byte_string;
+mem_or(var b1,b2: byte_string): byte_string;
+mem_xor(var b1,b2: byte_string): byte_string;
+
+The first byte_string argument b1 is replaced by the bitwise
+and (resp. or, xor) of b1 and b2. The modified byte_string b1
+is returned.
+Note that although the second argument b2 is not modified, it
+must be a variable argument (no byte_string literals are
+allowed). The reason for this rule is higher efficiency.
+
+(*----------------------------------------------------------------*)
+mem_shift(var b: byte_string; n: integer): byte_string;
+
+Performs a bit shift by abs(n) binary digits. if n > 0, the direction
+is from least-significant to most-significant, for n < 0, the shift
+is in the opposite direction. abs(n) bits are lost. They are replaced
+by 0's. Example:
+
+==> bb := $ABCD;
+    mem_shift(bb,4).
+-: $B0DA
+
+==> mem_shift(bb,4).
+-: $00AB
+
+(*----------------------------------------------------------------*)
+mem_bitswap(var b: byte_string): byte_string;
+
+Within each byte of b, the 8 bits are swapped from most significant
+<--> least significant, that is, sum{b_k*2**k, 0 <= k < 8}
+is replaced by sum{b_k*2**(7-k), 0 <= k < 8}.
+The modified byte_string is returned.
+Example:
+
+==> bb := $0102_1e2f.
+-: $0102_1E2F
+
+==> mem_bitswap(bb).
+-: $8040_78F4
+
+(*----------------------------------------------------------------*)
+mem_byteswap(var b: byte_string; wordlen: integer): byte_string;
+
+The byte_string is subdivided in groups of wordlen bytes each.
+Within each group, the bytes are swapped from most significant
+<--> least significant.
+The modified byte_string is returned.
+Example:
+
+==> bb := $AABBCCDDEE.
+-: $AABB_CCDD_EE
+
+==> mem_byteswap(bb,2).
+-: $BBAA_DDCC_EE
+
+==> mem_byteswap(bb,5).
+-: $EECC_DDAA_BB
+
+The functions mem_byteswap and mem_bitswap are useful for
+transforming bitmaps.
+
+(*----------------------------------------------------------------*)
+
+f) Arrays, records
+==================
+
+length
+sum
+product
+sort
+binsearch
+alloc
+realloc
+max_arraysize
+new
+nil
+
+(*----------------------------------------------------------------*)
+length(vec: array): integer;
+
+Returns the length of the array vec.
+
+(*----------------------------------------------------------------*)
+sum(vec: array of integer): integer;
+sum(vec: array of real): real;
+product(vec: array of integer): integer;
+product(vec: array of real): real;
+
+Returns the sum resp. the product of all components of vec.
+
+(*----------------------------------------------------------*)
+sort(var vec: array of integer): array of integer;
+sort(var vec: array of real): array of real;
+sort(var vec: array of string): array of string;
+
+The array vec, which is passed to the function sort as a variable
+argument, is sorted in non-decreasing order (for strings, the
+lexicographic order with respect to the ASCII-codes of characters
+is used). The sorted array is returned.
+
+sort(var vec: array of Type; compfun: function): array of Type;
+
+The function sort may be given as a second optional argument
+a comparison function
+        compfun(x,y: Type): integer;
+which must be a function of two arguments of the same data type
+as the components of the array. The relation defined by
+compfun(x,y) <= 0 must be transitive. Then vec is sorted in
+non-decreasing order, where x <= y is defined by compfun(x,y) <= 0.
+
+Example: Consider an array of pairs of integers.
+We define the following comparison function
+
+==> function compare2(x,y: array[2]): integer;
+    begin
+        return x[1] - y[1];
+    end.
+-: compare2
+
+==> vec := ((1,7), (2,3), (3,4), (4,-1), (5,2));
+    sort(vec,compare2).
+-: ((4, -1), (5, 2), (2, 3), (3, 4), (1, 7))
+
+(*----------------------------------------------------------------*)
+binsearch(ele: <type>; var vec: array of <type> 
+          [; compfun: function]): integer;
+
+The array vec must be a sorted array of elements of type <type>.
+The function searches in this array for an occurrence of the
+element ele and returns its position (zero-based). If ele is not
+found, -1 is returned.
+The third argument of binsearch is a comparison function
+
+        compfun(x,y: <type>): integer;
+
+which must be a function of two arguments of the same data type
+as the components of the array (see function sort).
+If vec is an array of integers, characters or strings,
+then the comparison function may be omitted. In this case the 
+natural order (numerical resp. alphabetical) is assumed.
+
+(*----------------------------------------------------------------*)
+alloc(Arraytype, Len [,Ele]): Arraytype;
+
+Arraytype must be one of the symbols array, string, byte_string.
+The function generates an array (resp. a string, a byte_string)
+of length Len, where all components are equal to Ele. If the argument
+Ele is not given, a default element is used. This default element
+is 0 for arrays, the space character ' ' for strings, and the
+zero byte for byte_strings.
+Examples:
+
+==> alloc(array,10).
+-: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+
+==> alloc(string,5,'A').
+-: "AAAAA"
+
+==> alloc(byte_string,5,127).
+-: $7F7F_7F7F_7F
+
+(*----------------------------------------------------------------*)
+realloc(var vec: <arraytype>; len: integer [; ele]): <arraytype>
+
+The variable argument vec must be an array, a string
+or a byte_string. If the integer len is bigger than the
+length of vec, the function increases the length of vec
+to len by appending components of value ele at the end.
+If ele is not given, default values are used. The new
+array (resp. string}, byte_string) is returned and
+also placed in the variable vec.
+If len is equal to the length of vec, then vec
+remains unchanged. If len is smaller than the length of
+vec, then vec is truncated to this smaller length.
+
+Examples:
+==> vec := (17,4,31).
+-: (17, 4, 31)
+
+==> realloc(vec,5,53).
+-: (17, 4, 31, 53, 53)
+
+==> bb := $AABB.
+-: $AABB
+
+==> realloc(bb,10).
+-: $AABB_0000_0000_0000_0000
+
+==> s := "abcde".
+-: "abcde"
+
+==> realloc(s,3).
+-: "abc"
+
+(*----------------------------------------------------------*)
+max_arraysize(): integer;
+
+In the present version of ARIBAS, lengths of arrays cannot be
+very large. The function max_arraysize returns the maximal
+admissible length. Typically, under UNIX, this value is about 64000,
+under MSDOS about 12000 or 16000.
+The maximal admissible length for strings and byte_strings is
+
+        min(4*max_arraysize(), 2**16-1).
+
+(*----------------------------------------------------------*)
+new(var ptr: pointer to RecType): Rectype;
+
+If ptr is a variable of type pointer to a certain record type,
+then new(ptr) creates a new record of that type and makes ptr
+point to this record. For example, after the variable declaration
+
+    var
+        ptr: pointer to record x,y,w,h: integer; end;
+    end;
+
+ptr has the value nil. Calling
+
+    ==> new(ptr).
+    -: &(0, 0, 0, 0)
+
+produces a record with four integer fields which can be accessed
+by ptr^.x, ptr^.y, ptr^.w and ptr^.h. For example
+
+    ==> ptr^.x := ptr^.y := 10; ptr^.w := 512; ptr^.h := 360.
+    -: 360
+
+    ==> ptr^.
+    -: &(10, 10, 512, 360)
+
+(*----------------------------------------------------------*)
+
+g) Stacks
+=========
+
+length
+stack_push
+stack_arraypush
+stack_pop
+stack_top
+stack_reset
+stack_empty
+stack2array
+stack2string
+
+(*-----------------------------------------------------------------*)
+There are no stack literals. One can generate stacks by
+variable declarations. For example, the following top level
+declaration
+
+var
+    st: stack;
+end.
+
+generates an empty stack. Afterwards, one can put elements
+onto the stack using the function stack_push.
+
+(*-----------------------------------------------------------------*)
+length(st: stack): integer;
+
+Returns the length of the stack st, i.e. the number of elements
+(of arbitrary data type) which lie on the stack.
+
+(*-----------------------------------------------------------------*)
+stack_push(st: stack; ele: Type): Type;
+
+Puts an element ele (of arbitrary data type Type) on top of the
+stack st. The length of the stack is increased by 1. The return
+value of the function is ele.
+
+(*-----------------------------------------------------------------*)
+stack_arraypush(st: stack; vec: array of <type> 
+                [; direction: integer]): integer;
+
+Pushes the components of the array vec onto the stack
+st. If the argument direction is positive or omitted,
+the order is from beginning to the end of vec. If
+direction is negative, the pushing occurs in reverse order.
+Return value is the number of elements pushed on st
+(= the length of vec).
+Examples:
+
+==> var st: stack; end.
+-: var
+
+==> vec := (1,2,3,4,5).
+-: (1, 2, 3, 4, 5)
+
+==> stack_arraypush(st,vec,-1).
+-: 5
+
+==> vec1 := stack2array(st).
+-: (5, 4, 3, 2, 1)
+
+(*-----------------------------------------------------------------*)
+stack_pop(st: stack): Type;
+
+The stack st must be non-empty. The function
+removes the top element of st and returns it.
+The length of the stack is decreased by 1.
+
+(*-----------------------------------------------------------------*)
+stack_top(st: stack): Type;
+
+Returns the top element of the stack st; the stack itself is
+not altered.
+
+(*-----------------------------------------------------------------*)
+stack_reset(st: stack): integer;
+
+Removes all elements from the stack st. There remains an empty stack.
+The function returns 0.
+
+(*-----------------------------------------------------------------*)
+stack_empty(st: stack): boolean;
+
+Tests if the stack st is empty.
+
+(*-----------------------------------------------------------------*)
+stack2array(st: stack): array of Type;
+
+Returns an array of length equal to length(st) whose components
+are the elements lying on the stack. The element at the bottom of
+the stack becomes the component of index 0. After execution of this
+function, the stack st is empty. It is in the responsibility of
+the programmer to ensure that all element have the correct data type.
+
+(*-----------------------------------------------------------------*)
+stack2string(st: stack): string;
+
+The elements on the stack st, which are strings
+or characters, are concatenated to a string. This string
+is returned. Elements of other data types on the stack 
+are ignored. After execution of this function, the stack 
+st is empty.
+Example:
+
+==> var st: stack; end.
+-: var
+
+==> stack_push(st,"stack").
+-: "stack"
+
+==> stack_push(st,pi).
+-: 3.14159265
+
+==> stack_push(st,'_').
+-: '_'
+
+==> stack_push(st,"push").
+-: "push"
+
+==> stack2string(st).
+-: "stack_push"
+
+(*-----------------------------------------------------------------*)
+
+h) In/Out
+=========
+
+write
+writeln
+flush
+readln
+load
+open_read
+open_write
+open_append
+rewind
+close
+set_filepos
+get_filepos
+length
+read_byte
+read_block
+write_byte
+write_block
+
+Predifined files:
+stdin
+stdout
+stderr
+
+(*--------------------------------------------------------------------*)
+open_write(var f: file; fnam: string): boolean;
+
+Opens a file with name fnam for write operations and sets the
+file variable f. (This file variable is needed for the write operations.)
+If a file with name fnam does not exist, it is created.
+Return value: true if the file has been succesfully opened, and
+false, if an error occurs.
+
+CAUTION: If a file with name fnam exists already, its previous
+content is overwritten and will be lost.
+
+(*--------------------------------------------------------------------*)
+open_append(var f: file; fnam: string): boolean;
+
+Opens a file with name fnam for write operations and sets the
+file variable f. (This file variable is needed for the write operations.)
+If a file with name fname does not exist, it is created.
+If the file exists already, the previous content is preserved
+and the new write operations are at the end of the file.
+Return value: true if the file has been succesfully opened, and
+false, if an error occurs.
+
+(*--------------------------------------------------------------------*)
+open_read(var f: file; fnam: string): boolean;
+
+Opens an existing file with name fnam for sequential reading.
+Return value: true if the file has been succesfully opened, and
+false, if an error occurs.
+
+(*--------------------------------------------------------------------*)
+rewind(var f: file): boolean;
+
+If f is a file which has been opened for reading and from which
+some data have already been read, rewind(f) resets the file position
+for the the next read operation to the beginning of the file.
+Return value: true if successful, else false.
+
+(*--------------------------------------------------------------------*)
+close(f: file): boolean;
+
+Closes a file f which has been opened before.
+
+(*--------------------------------------------------------------------*)
+length(f: file): integer;
+
+f must be a file opened for reading. Then the function returns
+the length of the file in bytes.
+
+(*--------------------------------------------------------------------*)
+Read and write operations on text files
+
+readln
+write
+writeln
+
+(*--------------------------------------------------------------------*)
+readln([f: file;] var arg1,...,argn): integer;
+
+Reads a line from file f, which must have been opened for reading.
+(If the file argument is not supplied, stdin is assumed, i.e. readln
+reads from the terminal.) The arguments arg1,...,argn must be
+of type integer, real, char or string. (A string variable always
+consumes all characters until the end of line.) The return value
+of readln is the number of successfully read items. If the end of file
+is already reached before the call of readln, -1 is returned. For example,
+assume that x is an integer variable, c1, c2 are character variables
+and s is a string variable. If the current line in the file f is
+
+1234 56 ab
+
+(where the line ends immediately after the character b), then
+readln(f,c1,x,c2,s) will return 4 and the variables will contain
+the following values:
+        c1 = '1', x = 234, c2 = ' ', s = "56 ab".
+If the same line is read with readln(f,s,x,c1,c2), then the return
+value is 1, the variable s contains the string "1234 56 ab", and
+x, c1, c2 are undefined.
+If an integer extends over more than one line, as in
+
+3_14159_26535_89793_23846_26433_83279_50288_41971_69399_37510_58209_74944_
+59230_78164_06286_20899_86280_34825_34211_70679
+
+where the continuation of the integer to the next line is marked by
+an underscore _, then this integer may be read by readln(f,x).
+While reading an integer, readln does not stop at the end of a line
+if the last character in the line is an underscore (no space or tab
+characters are allowed after the underscore).
+
+readln(f) without further arguments simply returns 0 and advances the
+file position to the beginning of the next line.
+
+(*--------------------------------------------------------------------*)
+write([f: file;] arg1,...,argn): integer;
+writeln([f: file;] arg1,...,argn): integer;
+
+Writes the arguments arg1,...,argn (which may have any data type)
+into a text file f, which must have been opened for writing.
+The function writeln adds a linefeed to the output.
+(If the file argument is not supplied, stdout is assumed, i.e.
+the functions write to the terminal.)
+Return value is the number of written arguments or -1 in case of error.
+
+(*--------------------------------------------------------------------*)
+
+FORMAT OPTIONS for the functions write and writeln
+--------------------------------------------------
+As in Pascal, arguments of the functions write or writeln
+of certain data types can be supplemented by format specifications.
+In ARIBAS there are even more format options than in Pascal.
+The format specifications, which we will describe in the following,
+are separated from the argument by a colon.
+
+a) Width specification
+----------------------
+If x is an integer, character oder string expression, then an
+argument of the form
+        x: wd
+determines the width of the output. wd must be an integer expression.
+If the value of width is bigger than the length of the string
+representation of x, then by inserting an appropiate number of
+space characters before x, the total width of the output is made
+equal to the value of wd. If the value of wd is negative
+and abs(wd) is bigger than the length of the string representation
+of x, then the necessary space characters are inserted after x.
+If abs(wd) is smaller or equal to the length of x, the format
+option is ignored. The same happens if abs(wd) is bigger than the
+line length.
+
+Example:
+==> writeln("###",123:8,'#',"abc":-8,'X':-3,"###");
+    writeln("###",123:-8,'#',"abc":8,'X':3,"###").
+###     123#abc     X  ###
+###123     #     abc  X###
+-: 6
+
+b) Formatting reals
+-------------------
+If x is a real, then an argument of the form
+        x: wd
+causes the (right aligned) output of x in exponential notation with
+a total width equal to the value of wd, which must be at least 10.
+Example:
+
+==> writeln("###",exp(1):15,"###");
+    writeln("###",-exp(10):15,"###");
+    writeln("###",exp(-10000):15,"###").
+### 2.718282E+0000###
+###-2.202647E+0004###
+### 1.135484E-4343###
+
+An argument of the form
+        x: wd: dec
+causes the output of x in fixed point representation with a total
+width wd and dec digits after the decimal point.
+Example:
+
+==> writeln("###",exp(1):15:5,"###");
+    writeln("###",exp(10):15:5,"###").
+###        2.71828###
+###    22026.46579###
+-: 3
+
+More elaborate format options for reals can be constructed using
+the function float_ecvt.
+
+c) Additional format options for integers
+-----------------------------------------
+As extensions of the Pascal format options, ARIBAS admits further
+options which are also separated by a colon and which have the form
+        base(n)
+        group(n)
+        digits(n)
+with an integer expression n.
+
+i) base(n)
+
+The format option base(n), where n may have one of the values
+2, 8, 10 or 16 determines the base of the integer representation.
+
+Example:
+==> x := 3**9; writeln(x:10, x:20:base(2), x:10:base(8), x:10:base(16)).
+     19683    1001100_11100011     46343      4CE3
+-: 4
+
+Note that write(x:base(n)) doesn't print the base prefix. If you want
+it to be written, you can achieve this as in the following example.
+
+==> writeln("0y",3**9:base(2)).
+0y1001100_11100011
+-: 2
+
+ii) group(n)
+
+The output of big integers in ARIBAS is structured by underscores.
+By default, ARIBAS uses for integers >= 2**32 an underscore after
+every 5 digits. This behavior can be customized by the group(n)
+option. Here n may be 0 or an integer >= 2. With the option group(0)
+no underscores are written; with the option group(n), n>=2, the output
+is subdivided in groups of n digits separated by underscores.
+
+Example:
+==> x := 3**100;
+    writeln(x);
+    writeln(x: group(0));
+    writeln(x: group(10)).
+515_37752_07320_11331_03646_11297_65621_27270_21075_22001
+515377520732011331036461129765621272702107522001
+51537752_0732011331_0364611297_6562127270_2107522001
+-: 1
+
+The group(n) option can also be applied to byte_strings. Here n
+must be even.
+Example:
+==> bb := byte_string(17**37);
+    for n := 0 to 10 by 2 do
+        writeln(bb:group(n));
+    end.
+513C759F43245912A19E1D5A0027B6B4F7C296
+51_3C_75_9F_43_24_59_12_A1_9E_1D_5A_00_27_B6_B4_F7_C2_96
+513C_759F_4324_5912_A19E_1D5A_0027_B6B4_F7C2_96
+513C75_9F4324_5912A1_9E1D5A_0027B6_B4F7C2_96
+513C759F_43245912_A19E1D5A_0027B6B4_F7C296
+513C759F43_245912A19E_1D5A0027B6_B4F7C296
+
+iii) digits(n)
+
+With the format option digits(n) one can force the output of leading
+zeroes. If n is bigger than the number of digits of an integer x
+with respect to a certain base, then leading zeroes are added such
+that the total number of digits equals n. If n is smaller than the
+number of digits of x, the format option is ignored.
+
+Example:
+==> for x := 3 to 10 do
+        writeln(x: 10: base(2): digits(4): group(2));
+    end.
+     00_11
+     01_00
+     01_01
+     01_10
+     01_11
+     10_00
+     10_01
+     10_10
+
+The format options base, digits, group may appear in arbitrary order.
+
+(*--------------------------------------------------------------------*)
+flush([f: file]);
+
+If f is an output file (default f = stdout) to which write operations
+have been performed, but some of the data are still being held in a
+buffer, then flush writes all data actually to the file.
+
+(*--------------------------------------------------------------------*)
+load(fnam: string): boolean;
+
+fnam must be the name of a text file with ARIBAS source code,
+the extension .ari may be omitted. Then load reads this file
+and executes all commands and function definitions in the file
+as if they had been input directly at the ARIBAS prompt.
+Typically, a loaded file contains definitions of functions.
+As they are read in, the names of the functions are printed to
+the terminal screen. If the file contains expressions to be evaluated,
+the result is printed to the screen.
+
+The return value of load is true, if the load operation was successful.
+In case of error, an error message is written, specifying a line number,
+where the error was detected (actually the error might be in some
+previous line).
+
+If the string fnam consists of several components separated by whitespace,
+then the first component is considered as the name of the file to load
+and the other components are treated as arguments which are collected as
+strings (together with the file name) in the vector ARGV.
+For example, suppose that a file abc1.ari with ARIBAS code exists
+in the current directory. Then
+
+    ==> load("abc1 8765 olfac").
+
+will load the file abc1.ari and the vector ARGV will have the
+following content:
+
+    ==> ARGV.
+    -: ("abc1", "8765", "olfac")
+
+This is as if you had started ARIBAS with command line arguments
+
+    aribas abc1 8765 olfac
+
+(See Chap.10, COMMAND LINE ARGUMENTS.)
+
+load(fnam,0).
+
+With a second argument 0 the function load works in quiet mode,
+the messages to terminal are suppressed.
+
+(*--------------------------------------------------------------------*)
+BINARY FILES:
+
+In ARIBAS, files are text files by default. However, files can also
+be opened in binary mode for reading and writing using the functions
+open_write, open_read, open_append. In this case, a third argument,
+consisting of the keyword binary, must be given. Example:
+
+==> open_read(f,"BIN.DAT",binary).
+
+This opens a file with name "BIN.DAT", which is supposed to exist,
+for reading in binary mode.
+For binary files there are the read operations read_byte and
+read_block and the write operations write_byte and write_block.
+The functions rewind and length may also be applied to binary files,
+which have been opened for reading.
+
+(*--------------------------------------------------------------------*)
+set_filepos(f: file; pos: integer): integer;
+
+f must be a binary file, opened for reading and pos must be an integer
+satisfying 0 <= pos < length(f). Then set_filepos sets the position
+for the next read operation at pos bytes from the beginning of the
+file. If pos is not in the admissible range, no action is taken.
+Return value is the file position after execution of set_filepos.
+
+(*--------------------------------------------------------------------*)
+get_filepos(f: file): integer;
+
+f must be a binary file, opened for reading. The function returns
+the current file position.
+
+(*--------------------------------------------------------------------*)
+read_byte(f: file): integer;
+
+Reads one byte at the current file position from a binary file opened
+for reading and increases the file position by 1. Return value is the
+read byte (an integer in the range 0 <= x < 256). If the file position
+is already end-of-file when read_byte is called, then -1 is returned
+and the file position remains unchanged.
+
+(*--------------------------------------------------------------------*)
+read_block(f: file; var block: byte_string; len: integer): integer;
+
+f must be a binary file opened for reading. The argument block must
+be a byte_string variable or a subarray of a byte_string with an
+actual length >= len. Then read_block reads len bytes from the
+file f (starting at the current file position) and stores them
+into the first len components of block. If the end-of-file is
+reached prematurely, the reading oeration is stopped and only the
+bytes read so far are stored in block. Return value of read_block
+is the number of actually read bytes. The file position is advanced
+by this value.
+
+(*--------------------------------------------------------------------*)
+write_byte(f: file; x: integer): integer:
+
+Writes one byte (given by an integer x in the range 0 <= x < 256) into
+a binary file f opened for writing (using open_write or open_append).
+Instead of an integer x one can use also a character.
+Return value in case of success is the written byte. In case of
+error, -1 is returned.
+
+(*--------------------------------------------------------------------*)
+write_block(f: file; var block: byte_string; len: integer): integer;
+
+f must be a binary file opened for writing. The argument block must
+be a byte_string variable or a subarray of a byte_string with an
+actual length >= len. Then write_block writes the first len bytes
+from block into the file f. Return value of write_block is the number
+of successfully written bytes. If no error occurs, this number
+equals len.
+
+(*-----------------------------------------------------------------*)
+
+i) System functions
+====================
+
+version
+memavail
+gc
+timer
+gmtime
+halt
+exit
+symbols
+make_unbound
+help
+transcript
+system
+getenv
+set_workdir
+get_workdir
+
+(*-----------------------------------------------------------------*)
+version(): integer;
+
+Writes the version number and the architecture, for which ARIBAS
+was compiled, to the terminal screen. Returns an integer, which is
+100*(major version no) + (minor version no). Example:
+
+==> version().
+ARIBAS Version 1.01, Sep. 1996 (MS-DOS 386)
+-: 101
+
+With the optional argument 0, the message to the screen is suppressed.
+Example:
+
+==> version(0).
+-: 101
+
+(*-----------------------------------------------------------------*)
+memavail(): integer;
+
+Writes some memory statistics to the screen and returns the free space
+(measured in KB) on the ARIBAS heap. Example:
+
+==> memavail().
+
+total number of garbage collections: 2
+  130044 Bytes reserved; 130044 Bytes active (97900 used, 32144 free)
+   10926 Bytes free for user defined symbols and symbol names
+-: 31
+
+Since ARIBAS has a garbage collector using the half space method,
+the ARIBAS heap is subdivided into two equal parts (in this example
+130044 bytes each). One part is active, memory requirements (for
+example for big integers) are satisfied from this part. In the
+above example 32144 bytes are still available. If the memory in
+the active part is exhausted, the garbage collector is called
+automatically. The total number of garbage collections since the
+beginning of the current ARIBAS session is also given. The names
+of user defined functions and variables are stored by ARIBAS in a
+symbol table. The space still available for this purpose is also
+reported.
+One can suppress all messages by calling memavail with the
+argument 0.
+
+==> memavail(0).
+-: 31
+
+(*-----------------------------------------------------------------*)
+gc(): integer;
+
+Forces a garbage collection and returns the new amount of memory
+(in KB) on the ARIBAS heap. The function outputs the same messages
+as the function memavail.
+A quiet version is gc(0). This is useful for example, if one wants
+to call some procedure only if a certain minimal amount of memory
+is available, as in the following code
+
+if gc(0) < 64 then
+    writeln("not enough memory for procedure foo");
+else
+    foo(...);
+    ...
+end;
+
+(*-----------------------------------------------------------------*)
+timer(): integer;
+
+Returns the number of milliseconds elapsed since a certain starting
+point dependend on the current computer session. (The precision
+is system dependent.) This can be used for example to measure the
+time needed to execute a certain function. Example:
+
+==> t := timer();
+    x := isqrt(2*10**2000);
+    timer() - t.
+-: 88
+
+In the above example, which was done under LINUX on a computer with a
+80486 processor, 33MHz, the square root of 2 was calculated with a
+precision of 1000 decimal places in 88 milliseconds.
+
+(*-----------------------------------------------------------------*)
+gmtime(): string;
+
+Returns Greenwich Mean Time as a string in the format
+"YYYY:MM:DD:hh:mm:ss" (year, month, day, hour, minutes, seconds).
+You can use the function string_split to retrieve the
+components of this string and use it to write your own
+custumized time function.
+
+Example:
+==> gmtime().
+-: "2003:06:09:08:26:20"
+
+==> tt := string_split(_,":").
+-: ("2003", "06", "09", "08", "26", "20")
+
+==> t0 := alloc(array,6);
+    for k := 0 to 5 do
+        t0[k] := atoi(tt[k]);
+    end;
+    t0.
+-: (2003, 6, 9, 8, 26, 20)
+
+gmtime(0): integer;
+
+If gmtime is called with the argument 0, then it returns
+the number of seconds passed since Jan. 1, 2000, 0:00 h GMT.
+
+Example:
+==> gmtime(0).
+-: 108462687
+
+(*-----------------------------------------------------------------*)
+symbols(aribas).
+
+Returns a list of ARIBAS keywords and builtin functions.
+The argument aribas has to be given as it stands (without quotes).
+
+symbols(user).
+
+Returns a list of currently user defined variables and functions.
+
+(*-----------------------------------------------------------------*)
+make_unbound(Sym): boolean;
+
+The symbol Sym denoting a user defined variable, constant or function
+can be made unbound. Builtin functions cannot be made unbound.
+Returns true if the removal of binding was successful.
+Example:
+
+==> vec := (2,3,4).
+-: (2, 3, 4)
+
+==> vec.
+-: (2, 3, 4)
+
+==> make_unbound(vec).
+-: true
+
+==> vec.
+eval: unbound symbol: vec
+-: error
+
+make_unbound is useful if one wants to recover memory used for
+variables (holding e.g. big integers or long arrays) which are
+no longer needed.
+
+The argument to make_unbound may also be the symbol user:
+
+make_unbound(user): boolean;
+
+This unbinds all user defined variables, constants and functions.
+Example:
+
+==> symbols(user).
+-: (ecN_add, ecN_dup, ecN_mult, ec_bigprimevar, ec_fact0, ec_factbpv, 
+ec_factorize, ecfactor, factor0, factorlist, factors, modpemult, ppexpo, 
+primelist, x, y)
+
+==> make_unbound(user).
+-: true
+
+==> symbols(user).
+-: ()
+
+(*-----------------------------------------------------------------*)
+help(Topic)
+
+Gives a short online help on Topic. For Topic one can use
+most symbols of the list returned by the command symbols(aribas).
+For example,
+
+==> help(factor16).
+
+gives a short description of the builtin function factor16.
+
+The help function depends on the file aribas.hlp, which
+contains the help texts. Under MS-DOS, this file must lie
+in the same directory as aribas.exe, under UNIX it must be
+in the search path.
+
+(*-----------------------------------------------------------------*)
+transcript([fnam: string]): boolean;
+
+Opens a log file with name fnam. The extension .log is appended
+automatically to fnam, if fnam has no extension. If no argument is
+given to transcript, "aribas.log" is used by default. For example,
+
+    ==> transcript("a1").
+    -: true
+
+opens a file a1.log (if it exists already, its previous content is
+lost). The effect of transcript is that all subsequent interaction
+between the user and ARIBAS is transcribed to the log file until the
+log file is closed again with the command
+
+    ==> transcript(0).
+
+The end of an ARIBAS session closes the log file automatically.
+
+(*-----------------------------------------------------------------*)
+system(command: string): integer;
+
+The string command is handed to the command interpreter (resp. shell)
+of the system for execution. Return value is an error code or 0.
+For example, under MS-DOS,
+
+    ==> system("dir").
+
+generates a listing of the current directory. Under UNIX, you can use
+
+    ==> system("ls -l").
+
+for the same purpose.
+
+(*-----------------------------------------------------------------*)
+getenv(name: string): string;
+
+Returns the value of the environment variable name or the empty
+string, if this variable is not defined.
+Example: Under UNIX,
+
+    ==> getenv("HOME").
+
+returns the name of the home directory of the current user.
+
+(*-----------------------------------------------------------------*)
+get_workdir(): string;
+
+Retrieves the current working directory.
+
+(*-----------------------------------------------------------------*)
+set_workdir(path: string): string;
+
+Sets the current working directory to the one given by 
+path. This can be either an absolute or a relative
+path. Return value is the new path. If the path does not
+exist, or ARIBAS is unable to open it, then the
+old working directory remains unchanged and the empty
+string is returned.
+Example:
+
+==> set_workdir("D:\aribas\work").
+-: "D:\aribas\work"
+
+(This example supposes that the directory "D:\aribas\work" exists.)
+
+(*-----------------------------------------------------------------*)
+halt([retcode: integer]): integer;
+
+A call to halt causes an immediate stop of the current function
+and a return to top level (even if halt occurs in a deeply nested
+function call). The return value is the optional argument retcode
+which must be a 16-bit integer (default value 0).
+The function halt is mainly used to recover from serious errors.
+Note: In contrast to exit, halt does not stop ARIBAS, but returns
+to the ARIBAS prompt.
+
+(*-----------------------------------------------------------------*)
+exit
+
+The command exit stops ARIBAS and returns to the shell or command
+interpreter from where ARIBAS was called.
+
+(*-----------------------------------------------------------------*)
+
+9) USER DEFINED FUNCTIONS
+=========================
+
+function
+procedure
+external
+const
+var
+begin
+end
+return
+
+(*--------------------------------------------------------------------*)
+In ARIBAS, all functions are defined at the same level (as in C).
+Nested function definitions (as in Pascal or Modula-2) are not
+allowed.
+Within function definitions one may refer to other functions,
+even if they have not yet been defined (no FORWARD declarations
+are necessary). It is in the responsibilty of the programmer
+to ensure that all necessary functions have been defined when
+the function is actually called.
+
+(*--------------------------------------------------------------------*)
+A function definition has the following form:
+
+function Funame(<formal parameter list>): Resulttype;
+<external declaration>
+<constant declaration>
+<variable declaration>
+begin
+    <statemement list>
+end.
+
+Instead of function, one may also use the keyword procedure (for
+compatibility with Modula-2).
+Funame must be an admissible identifier, different from all
+ARIBAS keywords and names of builtin functions.
+(Also for compatibility with Modula-2, Funame may be repeated
+after the symbol end.)
+The formal parameter list may contain (as in Pascal or Modula-2)
+value and variable parameters. The parameter list may also be
+empty, however the pair of parentheses may not be omitted.
+
+The external, constant und variable declarations, which will be
+discussed later, may also be absent.
+The body of the function comes between the symbols begin and end.
+It may contain one or more return statements of the form
+
+        return Retval;
+
+where Retval must have the data type Resulttype.
+In ARIBAS, also structured types (like arrays) may be used
+as Resulttype.
+
+Examples:
+(*--------------------------------------------------------------*)
+function mersenne(n: integer): integer;
+begin
+    return 2**n - 1;
+end.
+(*--------------------------------------------------------------*)
+This function calculates the n-th Mersenne number.
+
+==> mersenne(59).
+-: 576_46075_23034_23487
+
+An alternative form of this function definition is
+(*--------------------------------------------------------------*)
+procedure mersenne(n: integer): integer;
+begin
+    return 2**n - 1;
+end mersenne.
+(*--------------------------------------------------------------*)
+Remark: The period '.' at the end of the function definition
+is only necessary if one inputs the function definition directly
+at the ARIBAS prompt. If the function definition is in a file,
+which is loaded by ARIBAS (using the function load), one may also
+put a semicolon instead of the period.
+
+The following is a recursive function to calculate the
+factorial of n.
+(*--------------------------------------------------------------*)
+function fac_rec(n: integer): integer;
+begin
+    if n <= 2 then
+        return n;
+    else
+        return fac_rec(n-1)*n;
+    end
+end.
+(*--------------------------------------------------------------*)
+
+Variable declarations
+---------------------
+If the function needs local variables, they have to be declared
+as in the following example, which is an iterative version of
+the above function.
+
+function fac_it(n: integer): integer;
+var
+    i,x: integer;
+begin
+    x := 1;
+    for i := 2 to n do
+        x := x*i;
+    end;
+    return x;
+end.
+(*---------------------------------------------------------*)
+Using initializations in the variable declaration, this function
+could also have been written in the following way:
+
+function fac_it1(n: integer): integer;
+var
+    i := 1;
+    x := 1;
+begin
+    while inc(i) <= n do
+        x := x*i;
+    end;
+    return x;
+end.
+(*---------------------------------------------------------*)
+
+In contrast to Pascal, the lengths of arrays in variable
+declarations need not be constants.
+
+Example:
+(*---------------------------------------------------------*)
+function squarelist(n: integer): array;
+var
+    k: integer;
+    vec: array[n];
+begin
+    for k := 1 to n do
+        vec[k-1] := k*k;
+    end;
+    return vec;
+end.
+(*---------------------------------------------------------*)
+This function generates an array of length n containing the
+square numbers from 1 to n**2.
+
+==> squarelist(5).
+-: (1, 4, 9, 16, 25)
+
+In ARIBAS it is even possible to define functions that
+return a stack, as in the following example.
+(*---------------------------------------------------------*)
+function mk_stack(x: integer): stack;
+var
+    st: stack;
+begin
+    stack_push(st,x);
+    return st;
+end.
+(*---------------------------------------------------------*)
+This function creates a stack of length 1 containing the
+integer x.
+
+==> S := mk_stack(17).
+-: <STACK:260101DA>
+
+==> stack_top(S).
+-: 17
+(*---------------------------------------------------------*)
+
+External declarations
+---------------------
+If one wants to access global variables from within functions,
+they must be declared in the external declaration. The same
+holds for user defined global constants.
+(This is a precautionary measure, since it is so easy to create
+global variables simply by assignments. Anyway, one should use
+global variables inside functions only exceptionally.)
+
+Example:
+(*---------------------------------------------------------*)
+function count(): integer;
+external
+    Counter: integer;
+begin
+    return inc(Counter);
+end;
+(*---------------------------------------------------------*)
+This is also an example of a function with empty argument list.
+It is supposed that the integer variable Counter exists when
+the function is called.
+
+==> Counter := 7;
+    count().
+-: 8
+
+At the same time, the variable Counter has been increased by 1.
+
+==> Counter.
+-: 8
+
+The same effect can be achieved by passing Counter as a variable
+parameter.
+(*---------------------------------------------------------*)
+function count1(var counter: integer): integer;
+begin
+    return inc(counter);
+end;
+(*------------------------------------------------------------*)
+With the global variable Counter from above, we get
+
+==> count1(Counter).
+-: 9
+
+==> Counter.
+-: 9
+
+(*------------------------------------------------------------*)
+
+Constant declarations
+---------------------
+Constant declarations within function definitions are placed
+after the external declarations and before the variable
+declarations. They have a syntax as in Pascal or Modula-2.
+However, ARIBAS allows for example also array contants.
+
+Example:
+(*------------------------------------------------------------*)
+function dayofweek(n: integer): string;
+const
+    Week = ("SU", "MO", "TU", "WE", "TH", "FR", "SA");
+begin
+    return Week[n mod 7];
+end;
+(*------------------------------------------------------------*)
+==> dayofweek(4).
+-: "TH"
+
+(*------------------------------------------------------------*)
+
+Optional arguments of functions
+-------------------------------
+In ARIBAS, it is possible to define functions with optional
+arguments. To do this, one must put assignments of the form
+<identifier> := Val at the end of the formal parameter list
+instead of the usual type declarations for value parameters.
+If in a call of this function the corresponding argument is
+not supplied, Val is used as default value. If one supplies the
+argument, it may have any value of the same data type as Val.
+
+Example
+(*------------------------------------------------------------*)
+function ranvec(len: integer; bound := 1000): array;
+var
+    vec: array[len];
+    i: integer;
+begin
+    for i := 0 to len-1 do
+        vec[i] := random(bound);
+    end;
+    return vec;
+end;
+(*------------------------------------------------------------*)
+This functions creates an array of length len whose components
+are random numbers. If the function is called only with the argument
+len, then the randon numbers are taken from the interval 0 <= x < 1000.
+If called with two arguments len and bound, the random numbers are
+taken in the range 0 <= x < bound.
+
+==> ranvec(12).
+-: (923, 23, 510, 475, 970, 974, 5, 553, 175, 700, 891, 411)
+
+==> ranvec(12,100).
+-: (15, 95, 55, 99, 17, 63, 7, 82, 24, 62, 49, 10)
+
+There may be more than one optional argument.
+(*------------------------------------------------------------*)
+function ran_vec(len := 10; bound := 1000): array;
+var
+    vec: array[len];
+    i: integer;
+begin
+    for i := 0 to len-1 do
+        vec[i] := random(bound);
+    end;
+    return vec;
+end;
+(*------------------------------------------------------------*)
+This function may be called with zero, one or two arguments.
+
+==> ran_vec().
+-: (616, 446, 251, 397, 405, 516, 535, 220, 928, 703)
+
+==> ran_vec(8).
+-: (366, 149, 680, 868, 297, 827, 466, 736)
+
+==> ran_vec(8,60).
+-: (1, 50, 7, 11, 1, 45, 8, 11)
+
+(*------------------------------------------------------------*)
+
+
+10) COMMAND LINE ARGUMENTS
+==========================
+
+One can call ARIBAS with several command line arguments:
+
+    aribas [options] [<ari-file> [<arg1> <arg2> ...]]
+
+The following options are available:
+
+-q
+    (quiet mode) Suppresses all messages to the screen (version no,
+    copyright notice, etc.) when ARIBAS is started
+
+-v
+    (verbose mode, default) Does not suppress messages to the screen
+    when ARIBAS is started.
+
+-c <cols>
+    ARIBAS does its own line breaking when writing to the screen.
+    Normally it supposes that the screen (or the window in which
+    ARIBAS runs) has 80 columns. With the -c option you can set another
+    number, which must be between 40 and 160 (in decimal representation).
+    For example, if you run ARIBAS in an Xterm window with 72 columns,
+    use the option -c72 (or -c 72, the space between -c and the number
+    is optional).
+
+-m <mem>
+    Here <mem> is a number (in decimal representation) between 64
+    and 16000. This number indicates how many Kilobytes of RAM
+    ARIBAS should use for the ARIBAS heap. The default value depends
+    on the options used when ARIBAS was compiled. Typically, under
+    UNIX or LINUX it is 2 Megabytes, corresponding to -m2000
+
+-h <path of help file>
+    The online help of ARIBAS depends on a file aribas.hlp
+    which should be situated (under MS-DOS) in the same directory
+    as aribas.exe or (under UNIX) in the range of the environment
+    variable PATH. If this is not the case you can specify the
+    exact path of the help file with the -h option. If for example
+    the file aribas.hlp is in the directory /usr/local/lib, use the
+    option -h /usr/local/lib (the space after -h is not necessary).
+    The -h option can also be used if the help file has a different
+    name. If the help file is named help-aribas and lies in the
+    directory /home/joe/ari, use -h/home/joe/ari/help-aribas .
+
+-p <ari-search-path>
+    With this option you can specify a search path for loading
+    files with ARIBAS source code. <ari-search-path> may be either
+    the (absolute) pathname of one directory or several pathnames
+    separated by colons (under UNIX) or semi-colons (under MS-DOS).
+    Under UNIX, the user's home directory may be abbreviated by ~/ .
+    Suppose (under UNIX) that you have called ARIBAS with the
+    option
+
+        -p/usr/local/lib/aribas:~/ari/examples
+
+    and that your home directory is /home/alice/. Then the command
+
+        ==> load("factor").
+
+    will search the file factor.ari first in the current directory,
+    then in the directory /usr/local/lib/aribas and finally in
+    /home/alice/ari/examples.
+    Under MS-DOS, a typical example for the -p option looks like
+
+        -pC:\aribas\examples;D:\work\ari
+
+-b
+    Batch mode when loading an ARIBAS source code file from
+    the command line, see below.
+
+    One letter options which require no arguments may be merged,
+    for example
+        aribas -q -b
+    is equivalent to
+        aribas -qb
+
+<ari-file>
+    The next command line argument after the options is interpreted
+    as the name of a file with ARIBAS source code. If the file name
+    has the extension .ari, this extension may be omitted. The file
+    is loaded as if the command load("<ari-file>") had been given
+    after the start of ARIBAS at the ARIBAS prompt. If the file is
+    not found in the current directory it is searched in the
+    directories specified by the -p option.
+    If the option -b was given, the file is loaded and executed.
+    Afterwards ARIBAS exits without showing it's prompt. If
+    the file cannot be loaded completely because of an error,
+    ARIBAS exits immediately after the error message.
+
+<arg1> <arg2> ...
+    When further command line arguments follow <ari-file>, they
+    are collected (as strings) together with <ari-file> in the vector
+    ARGV which can be accessed from within ARIBAS.
+    Example: If you call ARIBAS with the command line
+
+        aribas startup 4536 eisenstein
+
+    and the current directory contains the file startup.ari, then
+    ARIBAS loads it and the vector ARGV has the form
+
+        ==> ARGV.
+        -: ("startup", "4536", "eisenstein")
+
+    If you need some arguments as numbers and not as strings, you can
+    transform them by atoi (or atof); in our example
+
+        ==> x := atoi(ARGV[1]).
+        -: 4536
+
+    will do it. The length of the vector ARGV can be determined by
+    length(ARGV).
+
+Configuration file
+------------------
+Options for running ARIBAS can be specified also using a configuration
+file. Under UNIX, this file is named .arirc, under MS-DOS its name
+is aribas.cfg. ARIBAS searches for a configuration file in the
+following order:
+
+    1) current directory
+    2) Under UNIX: home directory of the user
+       Under MS-DOS: directory containing aribas.exe
+
+Under UNIX, there is a third possibility: You can define
+an environment variable ARIRC containing the name of the configuration
+file (which may be different from .arirc) including the full path.
+
+In the configuration file you can specify all command line options
+described above which begin with a - sign, however a separate
+line must be used for every single option. Lines beginning with
+the character # or empty lines are ignored.
+In addition to the options described above, the configuration
+file may contain ARIBAS source code. For this purpose there
+must be a line reading
+
+-init
+
+Then everything after this line is treated as ARIBAS source code
+and executed when ARIBAS is started.
+
+The existence of a configuration file for ARIBAS does not exclude
+the possibility to give command line arguments. If an option
+(e.g. the -m option) is specified both in the configuration file
+and the command line but with different values, then the
+specification at the command line is valid. Analogously, a -v
+option on the command line overrides a -q option in the configuration
+file.
+If there is -init code in the configuration file and an <ari-file>
+argument at the command line, then the -init code is executed first
+and afterwards the <ari-file> is loaded and its code executed.
+
+(*************************** EOF ******************************)
+
+
+
+

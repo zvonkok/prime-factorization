@@ -1,0 +1,70 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 16
+** Quadratische Erweiterungen
+*)
+(*----------------------------------------------------------*)
+(*
+** Wurzelziehen modulo p
+*)
+(*----------------------------------------------------------*)
+(*
+** Quadratwurzel von a mod p
+** Voraussetzung: p ungerade Primzahl, jacobi(a,p) = 1.
+*)
+function fp_sqrt(p,a: integer): integer;
+begin
+    if p mod 4 = 1 then
+        return fp_sqrt1(p,a);
+    else (* p = 3 mod 4 *)
+        return a ** ((p+1) div 4) mod p;
+    end;
+end;
+(*----------------------------------------------------------*)
+(*
+** Quadratwurzel von a mod p
+** Voraussetzung: p ungerade Primzahl = 1 mod 4, jacobi(a,p) = 1.
+*)
+function fp_sqrt1(p,a: integer): integer;
+var
+    b: integer;
+    x: array[2];
+begin
+    b := 1;
+    while jacobi(b*b-a,p) /= -1 do inc(b) end;
+    x := fp2_pow(p, b*b-a, (b,1), (p+1) div 2);
+    return x[0];
+end;
+(*----------------------------------------------------------*)
+function fp2_mult(p,D: integer; x,y: array[2]): array[2];
+var
+    z0, z1: integer;
+begin
+    z0 := x[0]*y[0] + D*x[1]*y[1];
+    z1 := x[0]*y[1] + x[1]*y[0];
+    return (z0 mod p, z1 mod p);
+end;
+(*----------------------------------------------------------*)
+(*
+** Potenz x**ex im Koerper Fp(sqrt(D)), jacobi(D,p) = -1
+** Voraussetzung ex >= 0.
+*)
+function fp2_pow(p,D: integer; x: array[2]; N: integer): array[2];
+var
+    i: integer;
+    z: array[2];
+begin
+    if N = 0 then return (1, 0); end;
+    z := x;
+    for i := bit_length(N)-2 to 0 by -1 do
+        z := fp2_mult(p,D,z,z);
+        if bit_test(N,i) then
+            z := fp2_mult(p,D,z,x);
+        end;
+    end;
+    return z;
+end;
+(*----------------------------------------------------------*)

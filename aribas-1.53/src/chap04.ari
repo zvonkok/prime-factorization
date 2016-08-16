@@ -1,0 +1,64 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 4
+** Der euklidische Algorithmus
+*)
+(*--------------------------------------------------------*)
+(*
+** Berechnet den groessten gemeinsamen Teiler von x und y
+** mit einer rekursiven Form des euklidischen Algorithmus
+*)
+function gcd_rec(x,y: integer): integer;
+begin
+    if y = 0 then
+        return abs(x);
+    else
+        return gcd_rec(y, x mod y);
+    end;
+end;
+(*--------------------------------------------------------*)
+(*
+** Iterative Form des euklidischen Algorithmus
+**
+** Bemerkung: Auch als eingebaute ARIBAS-Funktion mit
+** dem Namen gcd vorhanden.
+*)
+function gcd_it(x,y: integer): integer;
+var
+    temp: integer;
+begin
+    while y /= 0 do
+        temp := y;
+        y := x mod y;
+        x := temp;
+    end;
+    return abs(x);
+end;
+(*--------------------------------------------------------*)
+(*
+** Berechnet ein Array (d,u,v), so dass
+**      d = gcd(x,y)
+** und d = u*x + v*y.
+*)
+function gcd_coeff(x,y: integer): array[3];
+var
+    q, temp, q11, q12, q21, q22, t21, t22: integer;
+begin
+    q11 := q22 := 1; q12 := q21 := 0;
+    while y /= 0 do
+        temp := y;
+        q := x div y;
+        y := x mod y;
+        x := temp;
+        t21 := q21; t22 := q22;
+        q21 := q11 - q*q21;
+        q22 := q12 - q*q22;
+        q11 := t21;
+        q12 := t22;
+    end;
+    return (x,q11,q12);
+end;
+(*--------------------------------------------------------*)

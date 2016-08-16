@@ -1,0 +1,121 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 24
+** Der Vier-Quadrate-Satz von Lagrange
+*)
+(*-----------------------------------------------------------*)
+(*
+** Funktionen zum Satz von Lagrange fuer Primzahlen = 3 mod 4
+**
+** Als Hilfsmittel einige Funktionen fuer ganzzahlige Quaternionen
+*)
+(*-----------------------------------------------------------*)
+(*
+** Norm fuer ganzzahlige Quaternionen
+*)
+function h_norm(x: array[4]): integer;
+begin
+    return x[0]**2 + x[1]**2 + x[2]**2 + x[3]**2;
+end;
+(*-------------------------------------------------------*)
+(*
+** Konjugation fuer ganzzahlige Quaternionen
+*)
+function h_conj(x: array[4]): array[4];
+begin
+    return (x[0],-x[1],-x[2],-x[3]);
+end;
+(*-------------------------------------------------------*)
+(*
+** Produkt der ganzzahligen Quaternionen x,y
+*)
+function h_mult(x,y: array[4]): array[4];
+var
+    z0,z1,z2,z3: integer;
+begin
+    z0 := x[0]*y[0] - x[1]*y[1] - x[2]*y[2] - x[3]*y[3];
+    z1 := x[0]*y[1] + x[1]*y[0] + x[2]*y[3] - x[3]*y[2];
+    z2 := x[0]*y[2] - x[1]*y[3] + x[2]*y[0] + x[3]*y[1];
+    z3 := x[0]*y[3] + x[1]*y[2] - x[2]*y[1] + x[3]*y[0];
+    return (z0,z1,z2,z3);
+end;
+(*-------------------------------------------------------*)
+(*
+** Die Argumente x,y sind ganzzahlige Quaternionen, y /= 0.
+** Es wird Division mit Rest durchgefuehrt
+**      x = q*y + r
+** Dabei ist q eine Hurwitz-Quaternion, der Rest r eine ganzzahlige
+** Quaternion mit Norm(r) < Norm(y).
+** Der Rest r wird zurueckgegeben.
+*)
+function h_mod(x,y: array[4]): array[4];
+var
+    N, Nhalf, i: integer;
+    z, q, r, u: array[4];
+begin
+    N := h_norm(y); Nhalf := N div 2;
+    z := h_mult(x,h_conj(y));
+    q := (z[0] div N, z[1] div N, z[2] div N, z[3] div N);
+    r := (z[0] mod N, z[1] mod N, z[2] mod N, z[3] mod N);
+    if even(N) and r = (Nhalf,Nhalf,Nhalf,Nhalf) then
+        return (0,0,0,0);
+    end;
+    for i := 0 to 3 do
+        if r[i] > Nhalf then inc(q[i]) end;
+    end;
+    u := h_mult(q,y);
+    return (x[0]-u[0],x[1]-u[1],x[2]-u[2],x[3]-u[3]);
+end;
+(*-------------------------------------------------------*)
+(*
+** Groesster gemeinsamer Teiler fuer ganzzahlige Quaternionen.
+** Dabei wird im Ring der Hurwitz-Quaternionen gearbeitet,
+** das Resultat ist aber immer eine ganzzahlige Quaternion.
+*)
+function h_gcd(x,y: array[4]): array[4];
+var
+    temp: array[4];
+begin
+    while y /= (0,0,0,0) do
+        temp := y;
+        y := h_mod(x,y);
+        x := temp;
+    end;
+    return x;
+end;
+(*-------------------------------------------------------*)
+(*
+** Das Argument p muss eine Primzahl = 3 mod 4 sein.
+** Das Resultat ist ein Vektor aus 4 natuerlichen Zahlen,
+** deren Quadratsumme gleich p ist.
+*)
+function p4squaresum(p: integer): array[4];
+var
+    x: array[2];
+    z: array[4];
+begin
+    x := fp_m1sqsum(p);
+    z := h_gcd((p,0,0,0),(1,x[0],x[1],0));
+    return (abs(z[0]),abs(z[1]),abs(z[2]),abs(z[3]));
+end;
+(*-------------------------------------------------------*)
+(*
+** Das Argument p muss eine Primzahl = 3 mod 4 sein
+** Die Funktion berechnet (x,y), so dass
+**      x*x + y*y = - 1 mod p
+** Wird von der Funktion p4squaresum benuetzt.
+*)
+function fp_m1sqsum(p: integer): array[2];
+var
+    x, y: integer;
+begin
+    for x := 1 to p do
+        if jacobi(-1-x*x,p) = 1 then break end;
+    end;
+    y := (-1-x*x)**((p+1) div 4) mod p;
+    return (x,y);
+end;
+(*-------------------------------------------------------*)

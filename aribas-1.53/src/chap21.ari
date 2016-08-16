@@ -1,0 +1,96 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 21
+** Kettenbrueche
+*)
+(*------------------------------------------------------------------*)
+(*
+** Berechnet die ersten n Koeffizienten der Kettenbruch-Entwicklung
+** von x und gibt sie als Array zurueck.
+** Bemerkung: Da floating point Arithmetik nicht exakt ist,
+** arbeitet auch real2cfrac nur mit begrenzter Genauigkeit.
+** Zur Erhoehung der Genauigkeit sollte man vor Anwendung der Funktion
+** die Anweisung
+**      set_floatprec(extended_float).
+** geben. Beispiel-Aufruf: real2cfrac(pi,20).
+*)
+(*------------------------------------------------------------------*)
+function real2cfrac(x: real; n: integer): array;
+var
+    k, a: integer;
+    y: real;
+    vec: array[n] of integer;
+begin
+    for k := 0 to n-1 do
+        vec[k] := a := floor(x);
+        y := x - a;
+        if y = 0.0 then return vec[0..k] end;
+        x := 1/y;
+    end;
+    return vec;
+end;
+(*-------------------------------------------------------------------*)
+(*
+** Berechnet den endlichen Kettenbruch einer rationalen Zahl u/v,
+** die als Array (u,v) als Argument uebergeben wird.
+** Beispiel-Aufruf: rat2cfrac((23,29)).
+*)
+function rat2cfrac(x: array[2] of integer): array;
+var
+    u, v, temp: integer;
+    st: stack;
+begin
+    u := x[0]; v := x[1];
+    while v /= 0 do
+        stack_push(st, u div v);
+        temp := u mod v;
+        u := v;
+        v := temp;
+    end;
+    return stack2array(st);
+end;
+(*-------------------------------------------------------------------*)
+function cfrac2rat(cf: array): array[2] of integer;
+var
+    u,v,u0,v0,u1,v1,k: integer;
+begin
+    v0 := 0; u0 := 1;
+    v := 1; u := cf[0];
+    for k := 1 to length(cf)-1 do
+        u1 := u; v1 := v;
+        u := cf[k]*u + u0;
+        v := cf[k]*v + v0;
+        u0 := u1; v0 := v1;
+    end;
+    return (u,v);
+end;
+(*-------------------------------------------------------------------*)
+(*
+** Kettenbruch-Entwicklung von sqrt(N)
+** Resultat ist ein Vektor (a0,a1,a2,...,an,2*a0),
+** wobei a0 = [sqrt(N)] und (a1,a2,...,an,2*a0) die Periode ist.
+*)
+function sqrtn2cfrac(N: integer): array;
+var
+    a, w, w2, q, q0, q1, m, m1: integer;
+    st: stack;
+begin
+    w := isqrt(N); q := N - w*w;
+    if q = 0 then
+        writeln(N," is a perfect square");
+        return {w};
+    end;
+    w2 := 2*w; a := w; m := w; q0 := 1;
+    stack_push(st,a);
+    while a /= w2 do
+        a := (m + w) div q;
+        stack_push(st,a);
+        m1 := a*q - m; q1 := q0 + a*(m - m1);
+        m := m1; q0 := q; q := q1;
+    end;
+    return stack2array(st);
+end;
+(*--------------------------------------------------------------*)

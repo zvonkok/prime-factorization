@@ -1,0 +1,186 @@
+(****************************************************************)
+(*
+** ARIBAS code to calculate pi to many decimal places
+** author: (C) 2004 Otto Forster 
+**   Email: forster@mathematik.uni-muenchen.de
+**   WWW:   http://www.mathematik.uni-muenchen.de/~forster
+** date of last change: 
+**   2004-07-11
+**
+** This code is placed under the GNU general public licence
+**
+** Example call:
+** ==> pi_chud(2000).
+*)
+(*--------------------------------------------------------------*)
+(*
+** Algorithmen zur Berechnung von pi und der Eulerzahl e
+** auf viele Dezimalen (n <= 20000).
+** pi_machin(n) berechnet pi nach der Machinschen Formel
+**	auf n Dezimalstellen genau;
+** pi_agm(n) benutzt zur Berechnung das arithmetisch-geometrische
+**	Mittel.
+** pi_chud(n) benutzt eine Methode von Ramanujam-Chudnowski
+**
+** euler(n) berechnet e auf n Dezimalstellen.
+** Der Funktionswert ist jeweils eine ganze Zahl. Diese entspricht
+** gerundet 10**n-mal pi bzw. e.
+*)
+(*--------------------------------------------------------------*)
+(*
+** Berechnet zz*log(2)
+*)
+function log2(zz)
+var
+        x, u, k;
+begin
+        x := 0;
+        k := 0;
+        u := (zz * 2**16 * 2) div 3
+        while u /= 0 do
+                x := x + u div (2*k + 1);
+                u := u div 9;
+                inc(k);
+        end;
+        return x div 2**16;
+end.
+(*------------------------------------------------------*)
+(*
+** Berechnet zz*arctan(1/n), wird von pi_machin benutzt
+*)
+function atan1(zz,n)
+var
+        x, u, v, k, nn;
+begin
+        x := 0;
+        k := 0;
+        nn := n*n;
+        u := zz div n;
+        while u /= 0 do
+                v := u div (2*k + 1);
+                if even(k) then
+                        x := x + v;
+                else
+                        x := x - v;
+                end;
+                u := u div nn;
+                inc(k);
+        end;
+        return x;
+end.
+(*------------------------------------------------------*)
+(*
+** Berechnet pi * 10**n nach der Machinschen Formel
+**
+** Beispiel-Aufruf: pi_machin(1000).
+*)
+function pi_machin(n)
+var     z1, x;
+begin
+        z1 := 10**n * 2**16;
+        x := 16 * atan1(z1,5) - 4 * atan1(z1,239);
+        return x div 2**16;
+end.
+(*------------------------------------------------------*)
+(*
+** Berechnet exp(1) * 10**n
+*)
+function euler(n)
+var     zz, x, k;
+begin
+        zz := 10**n * 2**16;
+        x := zz * 2;
+        k := 2;
+        while zz /= 0 do
+                zz := zz div k;
+                x := x + zz;
+                inc(k);
+        end;
+        return x div 2**16;
+end.
+(*------------------------------------------------------*)
+(*
+** Berechnet pi * 10**n,
+** benutzt arithmetisch-geometrisches Mittel
+** quadratische Konvergenz
+**
+** Beispiel-Aufruf: pi_agm(1000).
+*)
+function pi_agm(n)
+var     zz;
+begin
+        zz := 10**n * 2**16;
+        return piaux(zz) div 2**16;
+end.
+(*------------------------------------------------------*)
+(*
+** Hilfsfunktion fuer pi_agm
+*)
+function piaux(zz)
+var     s, a, atemp, b, c, i;
+begin
+        s := 0;
+        a := zz;
+        b := isqrt(zz * (zz div 2));
+        c := (a - b) div 2;
+        i := 1;
+        while c /= 0 do
+                writeln("eps(",i,") = ",c/zz);
+                s := s + (2**i * c * c) div zz;
+                atemp := a;
+                a := (a + b) div 2;
+                b := isqrt(atemp * b);
+                c := (a - b) div 2;
+                inc(i);
+        end;
+        return (4*a*a) div (zz - 2*s);
+end.
+(*------------------------------------------------------*)
+(*
+** Hilfsfunktion fuer pi_chud
+*)
+function Saux(zz)
+const
+	k1 = 545140134;
+	k2 = 13591409;
+	k4 = 100100025;
+	k5 = 327843840;
+var
+	A, n: integer;
+	S: integer;
+begin
+	A := zz*k1;
+	S := A * k2;
+	n := 1;
+	while A > 0 do
+         	A := A * ((6*n-5)*(6*n-3)*(6*n-1));
+		A := A div (n*n*n);
+		A := A div (k4*k5);
+		if even(n) then
+			S := S + A * (k2 + n*k1);
+		else
+			S := S - A * (k2 + n*k1);
+		end;
+		inc(n);
+	end;
+	return S div k1;
+end;
+(*--------------------------------------------------------*)
+(*
+** pi auf n Dezimalstellen nach Chudnowsky/Ramanujan 
+*)
+function pi_chud(n: integer): integer;
+const
+        k3 = 640320;
+        k6 = 53360;
+var
+  	zz: integer;
+	x: integer;
+begin
+	zz := 2**16 * 10**n;
+	x := isqrt(zz*zz*k3)*k6;
+	x := (zz * x) div Saux(zz);
+	return (x div 2**16);
+end;
+(*--------------------------------------------------------*)
+

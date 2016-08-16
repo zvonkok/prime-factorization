@@ -1,0 +1,67 @@
+#####################################################################
+# README file for the directory aribas-1.53/src
+# Author: O.Forster 
+#   Email: forster@mathematik.uni-muenchen.de
+#   Web:   http://www.mathematik.uni-muenchen.de/~forster
+# Date: 2004-11-29
+#####################################################################
+
+COMPILATION of ARIBAS (V. 1.53, Nov. 2004)
+
+To compile ARIBAS on a UNIX workstation, the following 25 files are 
+necessary.
+
+a) 23 C-Files
+
+alloc.c     analysis.c  aritaux.c   arith.c     aritool0.c  aritools.c
+aritx.c     arity.c     aritz.c     array.c     control.c   errtext.c
+eval.c      file.c      mainloop.c  mem0.c      parser.c    print.c
+scanner.c   storage.c   syntchk.c   sysdep.c    terminal.c
+
+b) 2 Include-Files
+
+logscr.inc 	(included by terminal.c)
+common.h	(common header file)
+
+The c-files must be compiled with the symbol UNiX defined (note the
+lower case i), so when all the above files (and no other c-files) 
+are in the current directory, the simple command line
+
+	cc -DUNiX -o aribas *.c
+
+will compile aribas (please note the lower case i in UNiX). 
+But you may also use the provided Makefile and compile
+aribas with the command
+
+	make
+
+If you have problems with system dependent functions (they are
+concentrated in the file sysdep.c), you may either edit the file
+sysdep.c according to the needs of your system or try 
+
+	cc -DUNiX -DSysDUM -o aribas *.c
+
+This will substitute dummy functions; the ARIBAS function timer and
+the automatic initialization of the random generator will not work,
+but everything else will not be affected.
+
+LINUX VERSION
+
+In the LINUX version for Computers with Intel 80386 processor (or higher),
+some C functions of the file aritool0.c are substituted by
+functions written in Assembler. The subdirectory LINUX contains the 
+necessary file arito386.S and a makefile with name Makefile.linux.
+
+INSTALLATION
+
+To run ARIBAS, only the executable file aribas is necessary.
+Move it to a directory which is in the PATH variable. If
+you want online help, you need also the file aribas.hlp, which
+must be placed in a directory which is in the PATH variable.
+There is also an interface to run ARIBAS within the GNU Emacs
+editor (version 19.xx or higher). The necessary Emacs Lisp file is
+aribas.el in the sub directory EL. Please read the corresponding
+README file.
+
+############################# EOF ###################################
+

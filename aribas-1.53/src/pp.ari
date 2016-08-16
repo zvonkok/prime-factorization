@@ -1,0 +1,20 @@
+function pp(B0,B1: integer): integer;
+var
+x, m0, m1, i: integer;
+begin
+x := 1;
+m0 := max(2,isqrt(B0)+1); m1 := isqrt(B1);
+writeln("m0 ",m0);
+writeln("m1 ",m1);
+for i := m0 to m1 do
+x := x*i;
+writeln("x ",x);
+end;
+if odd(B0) then inc(B0) end;
+for i := B0+1 to B1 by 2 do
+writeln("i ",i);
+if prime32test(i) > 0 then x := x*i end;
+end;
+return x;
+end;
+

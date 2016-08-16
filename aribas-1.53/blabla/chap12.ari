@@ -1,0 +1,78 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 12
+** Probabilistische Primzahltests
+*)
+(*--------------------------------------------------------------*)
+(*
+** Solovay-Strassen-Primzahltest
+** Dies ist ein probabilistischer Primzahltest.
+** Beim Ergebnis false ist x sicher keine Primzahl;
+** beim Ergebnis true ist x nur wahrscheinlich eine Primzahl.
+** Zur Erhoehung der Wahrscheinlichkeit kann der Test wiederholt werden.
+*)
+function ss_test(N: integer): boolean;
+var
+    a, j, u: integer;
+begin
+    if even(N) then return false end;
+    a := 2 + random(64000);
+    j := jacobi(a,N);
+    u := a ** (N div 2) mod N;
+    if j = 1 and u = 1 then
+        return true;
+    elsif j = -1 and N-u = 1 then
+        return true;
+    else
+        return false;
+    end;
+end;
+(*----------------------------------------------------*)
+(*
+** probabilistischer Primzahltest nach Rabin
+*)
+function rab_test(N: integer): boolean;
+var
+    k, n, t, u, a: integer;
+begin
+    if even(N) then return false end;
+    n := N div 2; t := 1;
+    while even(n) do
+        n := n div 2; inc(t);
+    end;
+    a := 2 + random(64000);
+    u := a ** n mod N;
+    if u = 1 or N-u = 1 then return true end;
+    for k := 1 to t-1 do
+        u := u*u mod N;
+        if N-u = 1 then return true end;
+    end;
+    return false;
+end;
+(*----------------------------------------------------*)
+(*
+** Sucht die naechste (wahrscheinliche) Primzahl q >= zz,
+** so dass auch 2*q-1 eine Primzahl ist.
+*)
+function nextq2q1prime(zz: integer): integer;
+var
+    zz2: integer;
+begin
+    if even(zz) then inc(zz); end;
+    zz2 := 2*zz-1;
+    while factor16(zz) or factor16(zz2) do
+        inc(zz,2); inc(zz2,4);
+    end;
+    while not rab_test(zz) or not rab_test(zz2) do
+        write('.');
+        inc(zz,2); inc(zz2,4);
+        while factor16(zz) or factor16(zz2) do
+            inc(zz,2); inc(zz2,4);
+        end;
+    end;
+    return zz;
+end;
+(*----------------------------------------------------*)

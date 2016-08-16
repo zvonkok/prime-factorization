@@ -1,0 +1,28 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 15
+** Das RSA-Kryptographie-Verfahren
+*)
+(*------------------------------------------------------------*)
+(*
+** Sucht die kleinste (wahrscheinliche) ungerade Primzahl >= zz
+*)
+function nextprime(zz: integer): integer;
+begin
+    if even(zz) then inc(zz); end;
+    while factor16(zz) do inc(zz,2); end;
+    if zz <= 2**32 + 2**17 then
+        writeln("prime:");
+        return zz;
+    end;
+    while not rab_primetest(zz) do
+        write('.'); inc(zz,2);
+        while factor16(zz) do inc(zz,2); end;
+    end;
+    writeln(" probable prime:");
+    return zz;
+end;
+(*------------------------------------------------------------*)

@@ -1,0 +1,17 @@
+This directory contains the files
+
+aribas.tut
+    this is a short tutorial as an introduction to ARIBAS
+
+aribas.doc
+    this is a more systematic documentation of ARIBAS.
+
+    Both files aribas.tut and aribas.doc are pure ASCII files.
+
+aribas.1
+    Unix man page for aribas in troff format.
+    Should be placed in directory /usr/man/man1 or /usr/local/man/man1
+
+aribas.man
+    ASCII version of aribas.1
+

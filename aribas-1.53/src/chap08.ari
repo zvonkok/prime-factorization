@@ -1,0 +1,77 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS Beispiel-Code zu Paragraph 8
+** Die Struktur von (Z/mZ)*, Primitivwurzeln
+*)
+(*---------------------------------------------------------------*)
+(*
+** Stellt fest, ob x eine Primitivwurzel mod p ist.
+** Es wird vorausgesetzt, dass p prim ist,
+** qvec ein Array, dessen Komponenten die Primfaktoren von p-1 sind,
+** und x eine nicht durch p teilbare ganze Zahl.
+*)
+function check_primroot(x,p: integer; qvec: array): boolean;
+var
+    i,m: integer;
+begin
+    for i := 0 to length(qvec)-1 do
+        m := (p-1) div qvec[i];
+        if x**m mod p = 1 then
+            return false;
+        end;
+    end;
+    return true;
+end;
+(*---------------------------------------------------------------*)
+(*
+** Liefert fuer eine ganze Zahl x einen Vektor,
+** dessen Komponenten die Primfaktoren von x sind.
+** Mehrfache Faktoren werden nur einmal aufgezaehlt.
+** Funktioniert nur, wenn x hoechstens einen Primfaktor > 2**16
+** hat, der aber < 2**32 sein muss.
+*)
+function factor_vec(x: integer): array;
+var
+    q, x0: integer;
+    st: stack;
+begin
+    q := 2; x0 := x;
+    while q := factor16(x,q) do
+        stack_push(st,q);
+        x := x div q;
+        while x mod q = 0 do x := x div q; end;
+    end;
+    if x > 2**32 then
+        writeln("factors of ",x0," too big");
+        halt(0);
+    end;
+    if x > 1 then stack_push(st,x); end;
+    return stack2array(st);
+end;
+(*---------------------------------------------------------------*)
+(*
+** Liefert fuer eine ungerade Primzahl p
+** die kleinste Primitivwurzel mod p
+** Setzt voraus, dass p-1 von der Funktion factor_vec
+** vollstaendig faktorisiert werden kann.
+*)
+function primroot(p: integer): integer;
+var
+    x: integer;
+    qvec: array;
+begin
+    qvec := factor_vec(p-1);
+    x := 2;
+    while x <= p-1 do
+        if check_primroot(x,p,qvec) then
+            return x;
+        else
+            inc(x);
+            if x = isqrt(x)**2 then inc(x); end;
+        end;
+    end;
+end;
+(*---------------------------------------------------------------*)

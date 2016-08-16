@@ -1,0 +1,1386 @@
+TUTORIAL
+
+ARIBAS Interpreter for Arithmetic, V1.09, Aug. 1997
+written by 0. Forster, email forster@mathematik.uni-muenchen.de
+
+This tutorial gives a short introduction to ARIBAS.
+For more informations see the documentation in the file "aribas.doc"
+
+INTRODUCTION
+============
+ARIBAS is an interactive interpreter suitable for big integer
+arithmetic and multiprecision floating point arithmetic.
+It has a syntax similar to Pascal or Modula-2, but contains also
+features from other programming languages like C, Lisp, Oberon.
+In ease of use it is comparable to Basic.
+
+There are versions of ARIBAS for UNIX workstations, LINUX,
+MS-DOS and ATARI-ST.
+
+After the start of ARIBAS there appear some messages on the
+screen and the ARIBAS prompt
+
+==>
+
+is displayed, indicating that ARIBAS is ready to accept your commands.
+IMPORTANT: To mark the end of your input, you must type a full stop '.'
+and then press the RETURN (ENTER) key.
+
+ARIBAS is case sensitive, so for example variables X and x are
+different. The command exit to leave ARIBAS must be given in
+lower case, however it is not necessary to put a full stop
+after exit.
+
+Arithmetic operators
+====================
+ARIBAS can be used like a pocket calculator. Simply enter the expression
+you want to calculate followed by a full stop and then press RETURN.
+Example:
+
+==> 234 * 123.
+-: 28782
+
+ARIBAS displays the sign -: to introduce the result.
+For exponentiation, ARIBAS uses the operator ** (as in FORTRAN).
+Example:
+
+==> 2**127 - 1.
+-: 1701_41183_46046_92317_31687_30371_58841_05727
+
+By the way, this is a prime number (found by Lucas in 1876).
+To store this number in a variable named p, one can use the following
+feature of ARIBAS: The three last results are always stored
+in the pseudo-variables _, __ and ___ (that is 1,2 or 3 underscores).
+Thus if you enter now
+
+==> p := _.
+
+ARIBAS answers
+-: 1701_41183_46046_92317_31687_30371_58841_05727
+
+Subsequently you may refer to this number simply by p, e.g.
+
+==> p.
+-: 1701_41183_46046_92317_31687_30371_58841_05727
+
+==> p*p + 2**32.
+-: 28_94802_23093_29048_85589_27462_52171_97696_29772_13799_48920_25464_01021_
+39455_08091_65825
+
+As you can see in these examples, ARIBAS structures the display of
+big integers (>= 2**32) by underscores.
+Also for the input of integers you may use underscores. The only
+condition is that the underscore appears between two digits (leading
+or trailing underscores are not allowed). Example:
+
+==> x := 91_2_345678_0.
+-: 91234_56780
+
+If you want to enter numbers which need more than one line, the
+last character before the end-of-line must be an underscore
+(you must type RETURN immediately after the underscore,
+spaces or tabs after the underscore are not allowed). The following
+line may begin with spaces and tabs, but the first character
+after these must be a digit.
+Example:
+
+==> x := 120000000000000000000000000000_
+         000000000000000000000000000000_
+         0000000000000000000000000_1234.
+-: 1200_00000_00000_00000_00000_00000_00000_00000_00000_00000_00000_00000_
+00000_00000_00000_00000_00000_01234
+
+Division:
+
+==> 100/7.
+-: 14.2857143
+
+The operator / denotes division in floating point mode.
+For integer division, use the operator div:
+
+==> 100 div 7.
+-: 14
+
+The remainder of the division is calculated by the operator mod:
+
+==> 100 mod 7.
+-: 2
+
+a div m is defined as the greatest integer <= a/m, the operators
+div and mod are connected by the equation
+
+        a = (a div m) * m + (a mod m)
+
+Thus
+
+==> -100 div 7.
+-: -15.
+
+==> -100 mod 7.
+-: 5
+
+==> -100 div -7.
+-: 14
+
+==> -100 mod -7.
+-: -2
+
+The operator mod and powers
+---------------------------
+When calculating an expression
+        a ** expo mod m
+ARIBAS does not calculate first a**expo and then reduce modulo m,
+but reduces all intermediate results modulo m which appear during 
+the calculation of the power a**expo. Thus calculations are possible 
+which would otherwise lead to overflows.
+
+Example:
+If p is a prime and a an integer relatively prime to p,
+then by the well known little theorem of Fermat one has
+a ** (p-1) = 1 modulo p. Let's verify this equation with
+the Lucas prime we calculated earlier.
+
+==> p := 2**127 - 1.
+-: 1701_41183_46046_92317_31687_30371_58841_05727
+
+==> 123456 ** (p-1) mod p.
+-: 1
+
+Of course this is true for arbitrary bases a (provided a is not
+a multiple of p). To get an `arbitrary' number a, one can use
+the function random:
+
+==> a := random(10**8).
+-: 84808802
+
+==> a ** (p-1) mod p.
+-: 1
+
+random(n) produces by means of a pseudo random generator a random
+integer x in the range 0 <= x <= n-1. Of course you will almost
+certainly get a different number when you call random(10**8).
+(The random generator may be controlled by the function
+random_seed, see the documentation.)
+
+Some builtin functions with integer arguments
+---------------------------------------------
+The function isqrt(x) returns the biggest integer y such that y*y <= x.
+For example, the square root of 2 can be calculated with a precision
+of 500 decimal places using the command
+
+==> isqrt(2*10**1000).
+-: 1_41421_35623_73095_04880_16887_24209_69807_85696_71875_37694_80731_76679_
+73799_07324_78462_10703_88503_87534_32764_15727_35013_84623_09122_97024_92483_
+60558_50737_21264_41214_97099_93583_14132_22665_92750_55927_55799_95050_11527_
+82060_57147_01095_59971_60597_02745_34596_86201_47285_17418_64088_91986_09552_
+32923_04843_08714_32145_08397_62603_62799_52514_07989_68725_33965_46331_80882_
+96406_20615_25835_23950_54745_75028_77599_61729_83557_52203_37531_85701_13543_
+74603_40849_88471_60386_89997_06990_04815_03054_40277_90316_45424_78230_68492_
+93691_86215_80578_46311_15966_68713_01301_56185_68987_23723
+
+The result is 10**500 times the square root of 2, rounded downwards to
+the next integer.
+
+The function gcd(x,y) calculates the greatest common divisor of x and y.
+Example:
+
+==> gcd(3**100+1,2**100-1).
+-: 41
+
+Functions for factorization
+---------------------------
+ARIBAS has stored internally all prime numbers < 2**16.
+If the integer x has a prime factor p < min(x,2**16), the command 
+factor16(x) returns the smallest such factor. If such a prime factor
+doesn't exist, the return value is 0.
+Examples:
+
+==> x := 91654327.
+-: 91654327
+
+==> factor16(x).
+-: 17
+
+==> x div 17.
+-: 5391431
+
+==> factor16(_).
+-: 17
+
+==> __ div _.
+-: 317143
+
+==> factor16(_).
+-: 83
+
+==> __ div _.
+-: 3821
+
+==> factor16(_).
+-: 0
+
+==> 17 * 17 * 83 * 3821.
+-: 91654327
+
+The function factor16 may be called with two additional optional
+arguments. factor16(x,x0) searches only for prime factors >= x0 and
+factor16(x,x0,x1) only for prime factors p satisfying x0 <= p <= x1.
+
+The function prime32test(x) tests an integer x with 0 < x < 2**32
+for primility. If x < 2**32 is prime, the function returns 1;
+if x < 2**32 is composite, 0 is returned. For x >= 2**32 the 
+return value is -1. Examples:
+
+==> 2**31 - 1.
+-: 2147483647
+
+==> prime32test(_).
+-: 1
+
+==> prime32test(2**32 - 1).
+-: 0
+
+==> prime32test(2**127 - 1).
+-: -1
+
+There are other builtin factorization and primality testing
+algorithms, namely rho_factorize(x), cf_factorize(x),
+rab_primetest(x). Details can be found in the documentation
+or by using the 
+
+Online Help of ARIBAS
+---------------------
+For example, information about the function rho_factorize can be 
+obtained by the command help(rho_factorize). 
+You will get the following output:
+
+    ==> help(rho_factorize).
+
+    rho_factorize(x:integer [; b: integer]): integer;
+
+    Tries to factorize x using Pollard's rho-algorithm. The optional
+    argument b is a bound for the maximal number of steps (default
+    value b = 2**16). If the algorithm finds a factor, it is returned,
+    in case of failure the return value is 0. The number x should
+    be free of small prime factors (e.g. < 1000). Then, if x has
+    a prime factor p < sqrt(x), the algorithm will in general find
+    a factorization of x if b is a small multiple of sqrt(p).
+    If the return value y is > 1 and < x, it is certainly a factor
+    of x, but not necessarily prime.
+
+    SEE ALSO: cf_factorize, factor16
+
+As an example, let us factorize the sixth Fermat number 2**64 + 1.
+
+==> rho_factorize(2**64 + 1).
+
+working ..
+factor found after 512 iterations
+
+-: 274177
+
+The command
+
+==> symbols(aribas).
+-: (ARGV, _, __, ___, abs, alloc, and, arccos, arcsin, arctan, arctan2, aribas,
+array, atof, atoi, begin, binary, bit_and, bit_clear, bit_length, bit_not,
+bit_or, bit_set, bit_shift, bit_test, bit_xor, boolean, break, by, byte_length,
+byte_string, cardinal, cf_factorize, char, chr, close, concat, const, cos, dec,
+decode_float, div, do, double_float, else, elsif, end, even, exit, exp,
+extended_float, external, factor16, factorial, false, file, float, float_ecvt,
+floor, flush, for, frac, ftoa, function, gc, gcd, gcdx, get_filepos,
+get_floatprec, get_printbase, getenv, halt, help, if, inc, integer, isqrt,
+itoa, jacobi, length, load, log, long_float, make_unbound, max, max_arraysize,
+mem_and, mem_bclear, mem_bitswap, mem_bset, mem_btest, mem_byteswap, mem_not,
+mem_or, mem_shift, mem_xor, memavail, min, mod, mod_coshmult, mod_inverse,
+mod_pemult, new, nil, not, odd, of, open_append, open_read, open_write, or,
+ord, pi, pointer, prime32test, procedure, product, rab_primetest, random,
+random_seed, read_block, read_byte, readln, real, record, return, rewind,
+rho_factorize, round, save_input, set_filepos, set_floatprec, set_printbase,
+short_float, sin, single_float, sort, sqrt, stack, stack2array, stack_empty,
+stack_pop, stack_push, stack_reset, stack_top, stderr, stdin, stdout, string,
+string_split, substr_index, sum, symbols, system, tan, then, timer, to,
+tolower, toupper, transcript, true, trunc, type, user, var, version, while,
+write, write_block, write_byte, writeln)
+
+returns a list of names of builtin functions and other reserved words
+in ARIBAS. For almost all of the symbols in this list you can get
+a short online help with the command help(Topic), where Topic is one 
+of the symbols in the above list. Let us do another example:
+
+    ==> help(rab_primetest).
+
+    rab_primetest(x: integer): boolean;
+
+    Performs the Rabin probabilistic prime test. If the function
+    returns false, the number is certainly composite. A 'random '
+    number x, for which factor16(x) = 0 and rab_primetest(x) = true
+    is prime with high probability. An exception are numbers constructed
+    purposely to fool the Rabin prime test. But also for these
+    numbers the error probability is less than 1/4.
+    To decrease the error probability, one can repeat the test
+    several times.
+
+    SEE ALSO: prime32test, factor16
+
+As an application, consider the number
+
+==> p := (2**64 + 1) div 274177.
+-: 6728_04213_10721
+
+==> rab_primetest(p).
+-: true
+
+
+Using other bases than 10 for the representation of integers
+------------------------------------------------------------
+Besides the decimal representation of integers, ARIBAS allows also
+hexadecimal (base 16), octal (base 8) and binary (base 2) representation
+of integers. For these bases special prefixes have to be used.
+The prefix is 0x for base 16, 0o for base 8 and 0y for base 2.
+(One can use also the upper case forms 0X, 0O, 0Y of the prefixes;
+however we recommend to use lower case.)
+
+Eaxamples:
+==> 0xFACE.
+-: 64206
+
+==> 0y1111.
+-: 15
+
+==> 0o377.
+-: 255
+
+The output is done by default in base 10, but this can be changed
+using the function set_printbase(b), where b must be one of the integers
+2, 8, 10 or 16.
+
+Example:
+==> x := 2**32 - 1.
+-: 4294967295
+
+==> set_printbase(16).
+-: 0x10
+
+==> x.
+-: 0xFFFF_FFFF
+
+==> set_printbase(2).
+-: 0y10
+
+==> x.
+-: 0y11111111_11111111_11111111_11111111
+
+==> set_printbase(8).
+-: 0o10
+
+==> x.
+-: 0o3_77777_77777
+
+ARIBAS provides also a series of builtin function for bit operations
+on integers, like bit_and, bit_or, bit_xor, bit_shift, etc. For these
+operations the integers are considered as bit sequences, i.e. to be in
+binary representation. For example, bit_and(x,0y11) returns the last
+2 bits of x, which is equivalent to x mod 4. For more information,
+read the documentation or use the online help.
+
+Floating point numbers (reals)
+==============================
+Besides integers, ARIBAS also supports floating point numbers
+(data type real). Floating point numbers are written in decimal
+representation and must contain a decimal point. Before and after
+the decimal point there must be at least one digit. Hence 2.0
+and 0.2 are admissible, but .3333 is not. Optionally there may
+follow a scaling factor, consisting of the symbol E (or e) and
+an integer in decimal representation (no spaces are allowed between
+the digits and the symbol E). For example, 2.0E3 means the same
+as 2000.0 and 2.0e-3 is equivalent to 0.002. However 2E3 is not
+admissible (since there is no decimal point).
+
+For the arithmetic with real numbers there are the operators
++, -, *, / and ** (exponentiation). As mentioned earlier for
+the operator / , there is sometimes an automatic type conversion
+from integer to real.
+
+Examples:
+==> 3 + 4/3.
+-: 4.33333333
+
+==> 2**-2.
+-: 0.250000000
+
+==> 2 ** 0.5.
+-: 1.41421356
+
+ARIBAS provides some builtin elementary algebraic and transcendental
+functions: sqrt (square root), log (natural logarithm), exp 
+(exponential function), the trigonometric functions sin, cos und tan, 
+and its inverse functions arcsin, arccos, arctan und arctan2.
+
+Examples:
+==> sqrt(2).
+-: 1.41421356
+
+==> arctan(1).
+-: 0.785398163
+
+==> tan(_).
+-: 1.00000000
+
+The constant pi is also available:
+==> sin(pi/3).
+-: 0.866025404
+
+==> _*_.
+-: 0.750000000
+
+(It is a well known fact that sine of pi/3 equals sqrt(3)/2 = sqrt(0.75).)
+If you let ARIBAS display the value of pi, you get the following result:
+
+==> pi.
+-: 3.14159265358979323846264338327950288419716939937510582
+
+This leads as to another topic.
+
+Calculating with multiple precision
+-----------------------------------
+ARIBAS supports 5 different types of floating point numbers which
+are internally represented with mantissas of different bit-length:
+
+        short_float     17 bits
+        single_float    32 bits
+        double_float    64 bits
+        long_float     128 bits
+        extended_float 192 bits
+
+By default, single_floats are used (this corresponds to a precision
+of 9 to 10 decimal places, since 32*log(2)/log(10) = 9.63..).
+The precision can be changed by the function set_floatprec.
+The call has either the form set_floatprec(Float_type), where 
+Float_type is one of the symbols short_float,...,extended_float
+or the form set_floatprec(bb), where bb is an integer denoting
+the desired float precision. If bb is not one of the numbers
+17,...,192, then it is automatically rounded to the next higher
+resp. highest admissible precision.
+
+Example:
+==> set_floatprec(long_float).
+-: 128
+
+==> 100/7.
+-: 14.2857142857142857142857142857142857
+
+==> exp(pi*sqrt(163)).
+-: 262537412640768743.999999999999250073
+
+(It is a curious fact known from analytic number theory that
+exp(pi*sqrt(163)) is almost an integer.)
+
+==> set_floatprec(50).
+-: 64
+
+==> pi/2.
+-: 1.57079632679489662
+
+The counterpart to set_floatprec is the function get_floatprec. 
+If called without arguments, the current float precision is returned.
+
+==> get_floatprec().
+-: 64
+
+Please note that in ARIBAS, when a function has no argument, the
+pair of parenthesis may not be omitted.
+get_floatprec may also be called with a floating point number
+as argument. Then the return value is the precision which is used
+for storing this number.
+
+Example:
+==> get_floatprec(pi).
+-: 192
+
+Direct input of floating point numbers with precribed precision
+---------------------------------------------------------------
+The command
+
+==> x := 0.2.
+-: 0.200000000
+
+stores the value 0.2 under the variable name x with the current
+float precision (which is single_float, if it has not been changed
+by set_floatprec). Using special exponent markers one can force
+another precision to be used. These exponent markers are:
+
+        short_float     S or s
+        single_float    F or f
+        double_float    D or d
+        long_float      L or l
+        extended_float  X or x
+
+(The exponent marker E denotes the current float precision.)
+
+Example:
+==> z := 0.2x0.
+-: 0.200000000000000000000000000000000000000000000000000000
+
+As a result, the number 1/5 is stored as an extended_float (i.e with 
+a mantissa of 192 bits) under the variable name z.
+If the current precision is single_float, the comparison z = 0.2
+returns
+
+==> z = 0.2.
+-: false
+
+(Since reals are stored internally in binary representation, even
+a simple number like 0.2 is not stored exactly. However 0.5 or 0.125
+would be stored without errors independently of the float precision.)
+
+
+Characters, strings
+===================
+Besides integer and real numbers, characters and strings are
+important data types in ARIBAS. A character literal is given
+by enclosing the character between single quotes, e.g.
+
+==> ch := 'X'.
+-: 'X'
+
+Another method to define a character is using the function chr,
+which transforms an (extended ASCII) code between 0 and 255 to
+the corresponding character. Example:
+
+==> ch := chr(65).
+-: 'A'
+
+Be cautious with codes which denote non-printable characters, since
+they may be interpreted as control characters when output to the
+terminal. For example
+
+==> write(chr(7)).
+-: 1
+
+will in general (depending on the system) produce a beep.
+The result 1 indicates that one argument (the bell character)
+has been written to the terminal.
+
+The inverse function of chr is ord, e.g.
+
+==> ord('X').
+-: 88
+
+Strings are finite sequences of characters. They have to be
+enclosed between double quotes, for example
+
+==> str := "abcd".
+-: "abcd"
+
+The function length can be applied to strings and returns the
+number of characters in the string, e.g.
+
+==> length(str).
+-: 4
+
+The characters which compose the string are now accessible as
+str[i], where the index i runs from 0 to length(str)-1, in
+our example from 0 to 3.
+
+==> str[2].
+-: 'c'
+
+This can also be used to modify the string, e.g.
+
+==> str[2] := 'X'.
+-: 'X'
+
+==> str.
+-: "abXd"
+
+The function concat concatenates several strings or characters,
+for example
+
+==> concat(str,'#',"123").
+-: "abXd#123"
+
+This is a new string, the components remain untouched:
+
+==> str.
+-: "abXd"
+
+Arrays
+======
+In ARIBAS it is easy to work with arrays. Array literals are
+given by enclosing a comma separated list of its components
+between parentheses, for example
+
+==> vec := (2,3,4).
+-: (2, 3, 4)
+
+The components of this array are now vec[0], vec[1] and vec[2].
+The indices of an array in ARIBAS always run from 0 to n-1, where n
+is the length of the array. This length can be determined by the
+builtin function length:
+
+==> length(vec).
+-: 3
+
+For arrays of length 1, braces must be used instead of parentheses.
+(This is necessary to distinguish vectors of length 1 from
+parenthesized expressions). Example:
+
+==> vec1 := {2}.
+-: {2}
+
+(Also arrays of length /= 1 may be written with braces.)
+
+The components of an array don't have to be constants; also
+expressions are allowed. These expressions are then evaluated.
+Example:
+
+==> n := 3;
+    arr := (2**n, 3**n, 4**n).
+-: (8, 27, 64)
+
+As you can observe in this example, it is possible to enter
+several commands following the ARIBAS prompt. The commands must be
+separated by semicolons. The commands are executed one after the other.
+The result of the last command is printed after the result 
+indicator -:
+
+Subarrays
+---------
+For strings and arrays, not only single components can be accessed,
+but also whole subarrays. If vec is an array, then vec[n1..n2] denotes
+the subarray consisting of all components vec[i] with n1 <= i <= n2.
+Example:
+
+==> vec := (1,2,3,4,5,6,7,8,9,10).
+-: (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+
+==> vec[2..6].
+-: (3, 4, 5, 6, 7)
+
+Such subarray designators may also appear at the left hand side
+of an assignment and thus allow the simultaneous modification
+of all components of a subarray.
+
+==> vec[2..6] := (-1,-2,-3,-4,-5).
+-: (-1, -2, -3, -4, -5)
+
+==> vec.
+-: (1, 2, -1, -2, -3, -4, -5, 8, 9, 10).
+
+The boundaries of the subarray don't have to be constants; also
+expressions evaluating to integers are allowed. The upper boundary
+may be omitted. Then the subarray extends until the end of the array.
+An example for strings:
+
+==> str := "ABCDEFGHIJK".
+-: "ABCDEFGHIJK"
+
+==> concat(str[0..length(str) div 2 - 1], '_', str[length(str) div 2..]).
+-: "ABCDE_FGHIJK"
+
+
+More about arrays
+-----------------
+The functions  sum  and  product  may be applied to arrays of
+integers or reals. They return the sum resp. the product of all
+components of the array. Example:
+
+==> A := (1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+    sum(A).
+-: 55
+
+==> product(A).
+-: 3628800
+
+Arrays can be created not only by assigning array literals.
+Another way is by using the function alloc. The syntax is 
+alloc(array, n, ele), where n is the length of the array and
+ele is an initial value for all components of the created array.
+The argument ele may be omitted; then the default value 0 is
+assumed. Example:
+
+==> alloc(array,10).
+-: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+
+The initial value ele is not necessarily an integer; also values
+of other data types are admitted. For example ele may itself be
+an array, as in
+
+==> mat := alloc(array,5,alloc(array,4)).
+-: ((0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0))
+
+This creates a (5 x 4)-matrix. The components of this matrix are
+
+    mat[i][j]  with  0 <= i <= 4, 0 <= j <= 3. 
+
+These components may now be filled with new values, e.g.
+
+==> for i := 0 to 4 do
+        for j := 0 to 3 do
+            mat[i][j] := 10*i + j;
+        end;
+    end;
+    mat.
+-: ((0, 1, 2, 3), (10, 11, 12, 13), (20, 21, 22, 23), (30, 31, 32, 33), (40,
+41, 42, 43))
+
+Here we have anticipated the for loop, which will be discussed in
+the section on control structures.
+As the above example shows, the input to ARIBAS can extend over
+several lines. To faciltate to handle such input, the MS-DOS
+version of ARIBAS has a builtin mini-editor which we describe 
+next.
+
+Builtin mini-editor (MS-DOS version)
+====================================
+In the MS-DOS version of ARIBAS, the input between the prompt ==>
+and the final full stop can be edited, even if it extends over
+several lines (up to 50 lines are possible, that is two screenfuls).
+The cursor (arrow) keys (CurRight, CurLeft, CurUp, CurDown) allow to 
+move within the text.
+The HOME key moves to the beginning of a line, the END key to
+the end of line.
+CTRL-CurRight moves to the beginning of the next word, CTRL-CurLeft
+to the beginning of the previous word.
+PageUp moves to the line of the prompt ==> or, if the prompt is outside
+the screen, moves to the first line on the screen.
+PageDown moves to the last line on the screen.
+CTRL-PageUp moves to the beginning, CTRL-PageDown to the end of input.
+The RETURN, BACKSPACE and DELETE key have the usual meaning.
+The TAB key moves to the next tabulator position (the distance
+between two adjacent tabulator positions is 4 columns),
+SHIFT-TAB moves to the previous tabulator position.
+CTRL-Y deletes the current line,
+CTRL-T deletes from the current cursor position to the end of word.
+
+To finish an input, one can proceed as follows: First press
+CTRL-PageDown to move to the end of text. If a full stop has not
+yet been set, type one. Then press the RETURN key.
+
+In the same way as ARIBAS stores the three last results in the
+pseudo-variables _, __ and ___, also the three most recent inputs
+are stored. They can be retrieved using the function keys CTRL-F1,
+CTRL-F2 and CTRL-F3 respectively, and edited again.
+A drawback of this method is that one cannot refer to inputs
+that were made earlier. To enable this, there is a possibilty
+to assign the last input to one of the function keys ALT-F1,
+ALT-F2 and ALT-F3. This is done by the command
+
+==> save_input(ch).
+
+Here ch must be one of the charactes 'a' (for ALT-F1), 'b' (for ALT-F2)
+or 'c' (for ALT-F3). Pressing ALT-Fk, one can retrieve these inputs
+any time (provided there has not been a reassignment).
+The function save_input can also be given a second argument, which 
+must be one of the numbers 1, 2 or 3. save_input(ch,2) saves
+the second last input, save_input(ch,3) saves the third last input
+and save_input(ch,1) is equivalent to save_input(ch).
+Instead of assigning previous input to a function key ALT-Fk,
+it is possible to save the input to a file with extension .ari.
+To do this, the name of the file (the extension .ari may be omitted)
+is passed as an argument to save_input. For example,
+
+==> save_input("a1").
+
+stores the last input in the file a1.ari. Using the command
+
+==> load_edit("a1").
+
+the content of this file is brought back to the screen and may be 
+edited further. The function load_edit can also load files which
+have been prepared by an external editor, provided that the number
+of lines is smaller than 50 and every line has a length <= 78.
+
+GNU-Emacs-Interface of ARIBAS (UNIX or LINUX version)
+=====================================================
+If you are using the UNIX or LINUX version of ARIBAS and are
+familiar with the Emacs editor, then you should run ARIBAS from
+within Emacs. If the Emacs interface of ARIBAS has been properly
+installed, you can start ARIBAS from within Emacs by the command
+META-X run-aribas (if you don't have a META key, use ESC X instead
+of META-X). Then a buffer named *aribas* is created in
+a new window, in which ARIBAS starts and shows its prompt
+==>
+You can then edit your input using the usual Emacs commands.
+Putting a full stop at the end and pressing RETURN sends the
+input to ARIBAS. (Under rare circumstances you don't want your
+input to end with a full stop, for example in response to a
+readln(s) command. Then you can send the input to ARIBAS by pressing
+CTRL-J.) To send a CTRL-C to ARIBAS, you have to press CTRL-C twice.
+META-P cycles backward and META-N forward through input history. 
+This can be used if you want to repeat previous input or modify 
+previous input.
+
+Running ARIBAS from the UNIX command line
+=========================================
+If you start ARIBAS (UNIX or LINUX version) from the command line,
+then when doing multiline input you cannot go back to previous
+lines and can edit only the current line of input. This inconvenience
+can be overcome if you are running UNIX in a windowing system
+like X-Windows. Then you should run ARIBAS in one window and start 
+your favorite text editor in a second window. There you prepare
+multiline input with the text editor and copy it by the cut and
+paste commands of the windowing system to the ARIBAS prompt in the
+other window.
+
+Transcript
+==========
+It is possible to store all input and output during an ARIBAS session
+in a file, which can afterwards be examined and edited by loading it 
+into an external editor. For this purpose serves the command
+
+==> transcript().
+
+This causes all subsequent interaction with ARIBAS to be recorded
+in a file  aribas.log  in the current directory. If a file of this
+name exists already, its previous content is lost. If you want to
+transcribe the session in a file with a different name, this filename
+must be given as an argument to the function transcribe; the extension
+.log may be omitted. For example
+
+==> transcript("a1").
+
+will transcribe the session in the file a1.log. The command
+
+==> transcript(0).
+
+stops transcription and closes the log file.
+The end of an ARIBAS session closes the log file automatically.
+
+Control Structures
+==================
+Loops
+-----
+For the programming of iterations, ARIBAS offers the for and
+the while loop
+
+The for loop
+------------
+The syntax is
+
+for Runvar := Start to Last do
+        <statement-list>
+end;
+
+Here Runvar is an integer variable, whereas Start and Last are
+integer expressions.
+
+Example:
+
+==> x := 1;
+    for i := 2 to 100 do
+        x := x * i;
+    end;
+    x.
+-: 933_26215_44394_41526_81699_23885_62667_00490_71596_82643_81621_46859_
+29638_95217_59999_32299_15608_94146_39761_56518_28625_36979_20827_22375_82511_
+85210_91686_40000_00000_00000_00000_00000
+
+This example calculates the factorial of 100.
+An extended form of the for loop is the following:
+
+for Runvar := Start to Last by Incr do
+        <statement-list>
+end;
+
+Here Incr is an integer expression which must be different from 0.
+(The simple form of the for-loop corresponds to Incr = 1.)
+For example,
+
+==> x := 1;
+    for i := 100 to 2 by -1 do
+        x := x*i;
+    end;
+    x.
+
+yields the same result as above (namely the factorial of 100), and
+
+==> x := 1;
+    for i := 1 to 100 by 2 do
+        x := x*i;
+    end;
+    x.
+-: 2725_39213_97507_29502_98071_32454_00918_63329_07963_30545_80341_37343_
+28823_44310_62011_71875
+
+calculates the product of all odd numbers from 1 to 99.
+
+The while loop
+--------------
+The Syntax is
+
+while <boolean expression> do
+        <statement-list>
+end
+
+The boolean expression may be for example an arithmetic relation
+(like x < y) or may be built up from simpler boolean expressions
+using the boolean operators and, or, not.
+
+Example:
+
+==> n := 1; x := 1;
+    while n <= 100 do
+        x := x*n;
+        inc(n);
+    end;
+    x.
+
+This sequence of commands calculates the factorial of 100 as does
+the for loop considered earlier. Here inc(n) is equivalent to
+n := n+1; analogously dec(n) is an abbreviation of n := n-1.
+
+If in the above while loop the command inc(n) were left out,
+this would produce an infinite loop. How to get out of such an
+infinite loop? Under MS-DOS (or on the ARARI) press simultaneously
+the left CONTROL and SHIFT key, under UNIX (and LINUX) press
+CONTROL-C. (If ARIBAS is run from within Emacs, CONTROL-C must be
+pressed twice.) In general, this will abort the loop and you will 
+get the message
+
+user interrupt
+** RESET **
+
+and a new prompt ==> appears, so you can try once again.
+
+In ARIBAS there is no  repeat .. until  loop. Such a loop can always
+be substituted by a suitable while loop.
+
+When using the while loop, the following feature of ARIBAS is
+sometimes useful: In every place, where ARIBAS expects a boolean
+value, one can also use integers. In this case 0 is considered 
+as false and every nonzero integer counts as true
+(this is the same behaviour as in the programming language C).
+
+As an example, consider the following code, which calculates
+the prime factorization of x.
+
+==> x := 10**11 + 1;
+    q := 2;
+    while q := factor16(x,q) do
+        writeln(q);
+        x := x div q;
+    end;
+    x.
+11
+11
+23
+4093
+-: 8779
+
+The function factor16(x,q) searches the smallest prime factor
+of x which is >= q and < min(2**16,x). If such a factor does not 
+exist, the function returns 0. The assignment q := factor16(x,q) 
+as a whole has an integer value, namely the new value of q. 
+Therefore, if a prime factor is found, this expression counts as 
+true and the commands in the body of the loop are executed. If no
+more prime factor is found, the value of the assignment is 0,
+which counts as false; therefore the loop is terminated. In
+the above example the last quotient x is smaller than 2**32,
+hence it must be prime. So the complete prime factorization
+of 10**11 + 1 has been found.
+
+If statements
+-------------
+The general if statement has the following form (as in Modula-2):
+
+if <boolean expression> then
+        <statement-list>
+elsif <boolean expression> then
+        <statement-list>
+elsif <boolean expression> then
+        <statement-list>
+...
+elsif <boolean expression> then
+        <statement-list>
+else
+        <statement-list>
+end
+
+There may be arbitrarily many (perhaps 0) elsif parts (please note
+the spelling elsif); the else part may also be absent.
+
+Example:
+
+==> for i := 0 to 10 do
+        if i mod 3 = 0 then
+            writeln("red");
+        elsif i mod 3 = 1 then
+            writeln("green");
+        else
+            writeln("yellow");
+        end;
+    end.
+red
+green
+yellow
+red
+green
+yellow
+red
+green
+yellow
+red
+green
+yellow
+red
+green
+
+The for loop doesn't return a proper result; however the writeln
+statements, which work as in Pascal, cause as a side effect the
+output of the sequence red, green, ... .
+By the way, ARIBAS is very tolerant regarding semicolons (in contrast
+to Pascal). In the above code all the semicolons before elsif, else
+and end could have been omitted without changing the effect.
+
+User defined functions
+======================
+It is easy to define new functions in ARIBAS which can subsequently
+be used in the same way as builtin functions.
+Let us start with a simple example:
+
+==> function mersenne(n: integer): integer;
+    begin
+        return 2**n - 1;
+    end.
+-: mersenne
+
+The answer
+-: mersenne
+indicates that ARIBAS has accepted this function definition
+and has stored it without reporting an error (however the absence 
+of an error message is no guarantee for the correctness).
+
+As you can see, the return statement
+
+        return <expression>
+
+is used to supply the result (return value) of the function.
+An example call of mersenne:
+
+==> mersenne(127).
+-: 1701_41183_46046_92317_31687_30371_58841_05727
+
+(This is the Lucas prime already mentioned earlier.)
+The default data type of ARIBAS is integer. The explicit declaration
+of this type may be omitted. Hence the following function definition
+is equivalent to the definition above:
+
+==> function mersenne(n);
+    begin
+        return 2**n - 1;
+    end.
+-: mersenne
+
+(One could even omit all semicolons.) However we do not recommend
+using this short form.
+
+If a function needs local variables, they have to be declared.
+Example:
+
+==> function fac(n: integer): integer;
+    var
+        x,i: integer;
+    begin
+        x := 1;
+        for i := 2 to n do
+            x := x*i;
+        end;
+        return x;
+    end.
+-: fac
+
+==> fac(100).
+-: 933_26215_44394_41526_81699_23885_62667_00490_71596_82643_81621_46859_
+29638_95217_59999_32299_15608_94146_39761_56518_28625_36979_20827_22375_82511_
+85210_91686_40000_00000_00000_00000_00000
+
+Instead of function, also the keyword procedure may be used (as in
+Modula-2). Also for compatibility with Modula-2, the function name 
+may be repeated at the end. Thus the above definition of the function
+fac is equivalent to
+
+==> procedure fac(n: integer): integer;
+    var
+        x,i: integer;
+    begin
+        x := 1;
+        for i := 2 to n do
+            x := x*i;
+        end;
+        return x;
+    end fac.
+
+In contrast to Pascal or Modula-2, nested function definitions
+are not allowed in ARIBAS. All functions have to be defined
+at top level (as in the programming language C).
+
+User defined global variables which are needed inside functions
+and which are not passed as arguments, can be used only if they
+are explicitly declared as external. The external declaration
+comes before the variable declaration.
+Example:
+
+==> function foo(n: integer);
+    external
+        Counter: integer;
+    var
+        i: integer;
+    begin
+        inc(Counter);
+        for i := 1 to n do
+            write(i*i,"; ");
+        end;
+    end.
+-: foo
+
+On each call, this function increases the global integer variable
+Counter, which is supposed to exist, by 1.
+The predefined constants true, false and pi can be used without
+an external declaration.
+
+Inside functions one can use not only builtin functions, but
+also other user defined functions, even if they are defined only
+later (no FORWARD declaration is needed). It is in the responsibility
+of the programmer to insure that the other functions have been defined
+when the actual function call is done. Otherwise a runtime error
+will be generated.
+
+Example:
+
+==> function foo(n: integer): integer;
+    begin
+        if n <= 0 then
+            return 0;
+        else
+            return bar(n);
+        end;
+    end.
+-: foo
+
+==> function bar(n: integer): integer;
+    begin
+        writeln(n);
+        return foo(n-1);
+    end.
+-: bar
+
+Here the functions foo and bar call each other recursively.
+
+==> foo(5).
+5
+4
+3
+2
+1
+-: 0
+
+As an extension to the capabilities of Pascal or Modula-2, a
+function in ARIBAS can return not only scalar types but also
+composite data types like strings or arrays.
+For example, consider the problem of multiplication of Gaussian 
+integers n + mi, (where n,m are integers and i = sqrt(-1)).
+We represent such a number n+mi by an integer array (n,m) of 
+length 2. Then the multiplication can be implemented as follows:
+
+==> function gauss_mult(x,y: array[2]): array[2];
+    begin
+        return (x[0]*y[0] - x[1]*y[1], x[0]*y[1] + x[1]*y[0]);
+    end.
+-: gauss_mult
+
+==> gauss_mult((2,3),(1,-2)).
+-: (8, -1)
+
+The following function reflects a string, i.e. returns a string
+which is the argument string read from right to left:
+
+==> function reverse(s: string): string;
+    var
+        n,i: integer;
+        temp: char;
+    begin
+        n := length(s);
+        for i := 0 to (n div 2)-1 do
+            temp := s[i];
+            s[i] := s[n-1-i];
+            s[n-1-i] := temp;
+        end;
+        return s;
+    end.
+-: reverse
+
+==> reverse("123456").
+-: "653421"
+
+Note that this function does not change its argument string,
+since the argument is passed as a value parameter and the function
+works on a private copy of it.
+
+==> s := "abc"; s1 := reverse(s).
+-: "cba"
+
+==> s.
+-: "abc"
+
+If one wants to modify the argument, it has to be passed as a 
+variable parameter. This is done (as in Pascal or Modula-2) by
+using the keyword var:
+
+==> function reverse0(var s: string): string;
+    var
+        n,i: integer;
+        temp: char;
+    begin
+        n := length(s);
+        for i := 0 to (n div 2)-1 do
+            temp := s[i];
+            s[i] := s[n-1-i];
+            s[n-1-i] := temp;
+        end;
+        return s;
+    end.
+-: reverse0
+
+==> s := "abc"; s1 := reverse0(s).
+-: "cba"
+
+==> s.
+-: "cba"
+
+One more example:
+
+==> function double(var x: integer): integer;
+    begin
+        x := 2*x;
+        return x;
+    end.
+-: double
+
+==> x := 123456; double(x).
+-: 246912
+
+==> x.
+-: 246912
+
+In variable declarations inside function definitions the lengths
+of arrays may depend on the function's arguments, as in the
+following example:
+
+==> function index_vector(n: integer): array;
+    var
+        i: integer;
+        vec: array[n];
+    begin
+        for i := 0 to n-1 do
+            vec[i] := i+1;
+        end;
+        return vec;
+    end.
+-: index_vector
+
+This function creates a vector of length equal to the argument n
+of the function whose components are the integers from 1 to n.
+
+==> index_vector(20).
+-: (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
+
+Loading Files
+-------------
+For bigger programming projects it is advisable to prepare the
+source codes with an external editor and save them in files with
+the extension .ari. Such a file can then be loaded from within ARIBAS. 
+This is done with the function load, which is used as follows:
+
+==> load(<Filename>).
+
+Here <Filename> is the name of the file as a string (enclosed
+between double quotes "..."). The extension .ari may be omitted.
+Suppose that there exists a file named  fib.ari  in the current
+directory which contains definitions of three functions
+fib_rec, fib_it und fib. This file can then be loaded with
+the following command:
+
+==> load("fib").
+fib_rec
+fib_it
+fib
+-: true
+
+The statements in the file (in our case the definitions of the 
+functions fib_rec, fib_it und fib) are read in succession and
+evaluated. The result true indicates that the file has been
+successfully loaded. Now the functions fib_rec, fib_it and fib 
+can be used as if their definitions had been input directly at
+the ARIBAS prompt.
+
+Comments: Source code in files shpuld always be fully commented.
+In ARIBAS, comments are enclosed between the comment brackets
+(* and *). All text between the symbol (* and the next following *)
+is considered as a comment and ignored by ARIBAS. Comments may
+extend over several lines. Nested comments are not allowed.
+
+ERRORS
+======
+When writing program code, one almost inevitably commits errors.
+To be able to correct these errors more easily, it is advisable
+to write and test program code in small units.
+
+Suppose you have written the following function definition
+at the beginning of a file named test1.ari.
+
+    function fac(n: integer): integer;
+    var
+        x,i: integer;
+    begin
+        x := 1;
+        for i := 2 to n then
+            x = x*i;
+        end;
+        return x;
+    end.
+
+When you load this file by
+
+    ==> load("test1").
+
+you will get the following error messages:
+
+    error in line <= 8 of loaded file
+    for: do expected
+    error in line <= 8 of loaded file
+    function: syntax error
+    -: false
+
+You should pay attention only to the first error message, since 
+the following might be spurious errors caused by the first one.
+In our example an error in the for loop has occurred, which ARIBAS
+has located in line <= 8. In fact, in line 7, instead of 'do'
+there is the erroneous keyword 'then'. When you correct this
+error and load the file again,
+
+    ==> load("test1").
+    fac
+    -: true
+
+the file is accepted by ARIBAS without complaints. A test yields
+
+    ==> fac(100).
+    -: 1
+
+which is obviously false. This time the error is more difficult
+to find. It is hidden in the line
+
+        x = x*i;
+
+where the colon of the assignment operator is missing. Hence
+this statement is only a comparison between the numbers x and x*i.
+Although this comparision is useless, it is syntactically correct
+and therefore not criticized by ARIBAS.
+It is clear that such an error would be very hard to detect if
+you had already written several interdependent functions which
+were all syntactically correct but which have not been individually
+tested for semantic correctness.
+
+(********************************* EOF ******************************)

@@ -1,0 +1,171 @@
+(**********************************************************************)
+(*
+** ARIBAS code for the n queens problem
+** author: (C) 2004 Otto Forster 
+**   Email: forster@mathematik.uni-muenchen.de
+**   WWW:   http://www.mathematik.uni-muenchen.de/~forster
+** date of last change: 
+**   2004-07-11
+**
+** This code is placed under the GNU general public licence
+**
+** Example calls:
+** ==> queens(9).
+** ==> queensrand(20).
+*)
+(*--------------------------------------------------------------------*)
+(*
+** n-Damenproblem: n Damen sind auf einem n-mal-n-Schachbrett so
+** zu plazieren, dass sie sich nicht gegenseitig bedrohen.
+** Aufruf: queens(n).
+** Dabei ist n die Groesse des Brettes
+** (z.B. n = 8; fuer n > 10 dauert die vollstaendige Loesung sehr lange)
+** Die Loesungen werden als Vektoren (a1,a2,...,an) ausgegeben.
+** Dieser Vektor bezeichnet die Stellung, in der in der i-ten Zeile
+** eine Dame auf der ai-ten Spalte steht
+*)
+(*--------------------------------------------------------------------*)
+var
+    NbSol: integer;
+end;
+
+function queens(n: integer): integer;
+external
+    NbSol: integer;
+var
+    i: integer;
+    brett, rest: array[n];
+begin
+    NbSol := 0;
+    for i := 0 to n-1 do
+        rest[i] := i+1;
+    end;
+    queenshilf(brett,0,rest,n);
+    writeln("number of solutions:");
+    return NbSol;
+end.
+(*--------------------------------------------------------------------*)
+function queenshilf(brett: array; n: integer; rest: array; m: integer)
+external
+    NbSol: integer;
+var
+    i, j, x: integer;
+begin
+    if m = 0 then
+        inc(NbSol);
+        writeln(NbSol:4,": ",brett);
+    else
+        for i := 0 to m-1 do
+            x := rest[i];
+            if freediag(x,brett,n) then
+                brett[n] := x;
+                for j := i+1 to m-1 do
+                    rest[j-1] := rest[j];
+                end;
+                queenshilf(brett,n+1,rest,m-1);
+                for j := m-1 to i+1 by -1 do
+                    rest[j] := rest[j-1];
+                end;
+                rest[i] := x;
+            end;
+        end;
+    end;
+end.
+(*------------------------------------------------------------------*)
+function freediag(x: integer; brett: array; n: integer): boolean;
+var
+    i: integer;
+begin
+    for i := 0 to n-1 do
+        if abs(x - brett[i]) = n-i then
+            return false;
+        end;
+    end;
+    return true;
+end.
+(*------------------------------------------------------------------*)
+(*
+** randomized version of queens
+** example call: queensrand(17).
+*)
+function queensrand(n);
+var
+    i: integer;
+    brett, rest: array[n];
+begin
+    rest := random_perm(n);
+    writeln(n," queens problem;  ... thinking ...");
+    queenshilf1(brett,0,rest,n);
+    return;
+end;
+(*------------------------------------------------------------------*)
+function random_perm(n: integer): array;
+var
+    perm: array[n];
+    i, x, temp: integer;
+begin
+    for i := 0 to n-1 do
+        perm[i] := i+1;
+    end;
+    for i := 0 to n-1 do
+        x := random(n-i);
+        temp := perm[i+x];
+        perm[i+x] := perm[i];
+        perm[i] := temp;
+    end;
+    return perm;
+end;
+(*------------------------------------------------------------------*)
+function queenshilf1(brett: array; n: integer;
+                     rest: array; m: integer): integer;
+var
+    i, j, x, res: integer;
+begin
+    if m = 0 then
+        display_board(brett);
+        return 1;
+    else
+        for i := 0 to m-1 do
+            x := rest[i];
+            if freediag(x,brett,n) then
+                brett[n] := x;
+                for j := i+1 to m-1 do
+                    rest[j-1] := rest[j];
+                end;
+                res := queenshilf1(brett,n+1,rest,m-1);
+                if res > 0 then return 1; end;
+                for j := m-1 to i+1 by -1 do
+                    rest[j] := rest[j-1];
+                end;
+                rest[i] := x;
+            end;
+        end;
+    end;
+    return 0;
+end.
+(*------------------------------------------------------------------*)
+function display_board(brett: array);
+var
+    i, n: integer;
+begin
+    n := length(brett);
+    for i := 0 to n-1 do
+        display_row(brett[i],n);
+    end;
+end;
+(*------------------------------------------------------------------*)
+function display_row(k,n)
+var
+    i: integer;
+begin
+    write("    ");
+    for i := 1 to k-1 do
+        write(" .");
+    end;
+    write(" D");
+    for i := k+1 to n do
+        write(" .");
+    end;
+    writeln();
+end;
+(*------------------------------------------------------------------*)

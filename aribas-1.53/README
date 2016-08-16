@@ -1,0 +1,12 @@
+The directory src contains the necessary files to compile
+ARIBAS for UNIX workstations and for LINUX.
+
+The directory doc 
+contains some files for documentation.
+
+The directory examples 
+contains three example files of ARIBAS code.
+
+The file gnugpl.txt contains the text of the
+GNU General Public License
+

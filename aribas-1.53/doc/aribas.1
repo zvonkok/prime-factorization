@@ -1,0 +1,584 @@
+.\" Licensed under the Gnu Public License, Version 2
+.\"
+.\" $Id: ssystem.1.2   1996/06/30 13:33:54 bousch Exp $
+.\"
+.TH ARIBAS 1 "February 2001" "ARIBAS"
+
+.SH NAME
+aribas \- Multiprecision Arithmetic Interpreter
+
+.SH SYNOPSIS
+.B aribas
+[\fIoptions\fR] [<\fIari-file\fR> [<\fIarg1\fR> <\fIarg2\fR> ...]]
+
+This man page was written for Debian since the orginal software
+did not contain a man page.
+
+.SH DESCRIPTION
+
+\fBAribas\fR is an interactive interpreter suitable for big integer
+arithmetic and multiprecision floating point arithmetic.
+It has a syntax similar to Pascal or Modula-2, but contains also
+features from other programming languages like C, Lisp, Oberon.
+
+.\"---------------------------------------------------------
+.SH USAGE
+The simplest way to use \fBaribas\fR is as a calculator for (big integer)
+arithmetic. After \fBaribas\fR is started, it displays a prompt
+.BR ==>  
+and is ready to accept input. Simply enter the
+expression you want to calculate, followed by a full stop,
+and then press RETURN, for example
+.nf
+
+    ==> 123 + 456*789.
+
+.fi
+\fBAribas\fR answers
+.nf
+
+    -: 359907
+
+.fi
+The symbol \fB-:\fR introduces the result.
+.br
+.BR IMPORTANT.
+To mark the end of your input, you must always type a full stop `.' 
+and then press RETURN.
+.br
+.PP
+You can assign the result of a calculation to a variable, as in
+.nf
+
+    ==> F6 := 2**64 + 1.
+    -: 18446_74407_37095_51617
+ 
+.fi
+This calculates the 6th Fermat number (\fB**\fR denotes exponentiation)
+and assigns it to the variable \fBF6\fR (note that \fBaribas\fR is case
+sensitive, so this is not the same as \fBf6\fR).  Later you can use
+this variable for example in the expression
+.nf
+
+    ==> 123**(F6 - 1) mod F6.
+    -: 688_66214_58712_63971 
+
+.fi
+which shows (by Fermat's theorem) that F6 is not a prime number.
+.br
+The three most recent results are stored in the pseudo variables
+\fB_\fR, \fB__\fR, and \fB___\fR. For example you can store the last 
+result in the variable x by the command
+.nf
+
+    ==> x := _.
+    -: 688_66214_58712_63971
+ 
+.fi
+As you can see in the above examples, \fBaribas\fR uses the underscore
+\fB_\fR to structure the output of big integers (>= 2**32). Also for input
+of integers you may use the underscore, the only condition is that
+immediately before and after the underscore there are digits, example:
+.nf
+
+    ==> z := 123_4567_890.
+    -: 1234567890
+ 
+.fi
+Here the output contains no underscore, which shows that z is less
+than 2**32.
+.P
+\fBAribas\fR has several built-in functions for factorization, for example
+\fIrho_factorize\fR, which uses Pollard's rho algorithm.
+.nf
+
+    ==> rho_factorize(F6).
+
+    working ..
+    factor found after 512 iterations
+
+    -: 274177
+ 
+.fi
+To find the remaining cofactor, give the command
+.nf
+
+    ==> x := F6 div _.
+    -: 6728_04213_10721
+ 
+.fi
+To test whether this factor is prime, Rabin's probabilistic test
+\fIrab_primetest\fR can be applied:
+.nf
+
+    ==> rab_primetest(x).
+    -: true
+ 
+.fi
+The function \fIrho_factorize\fR is good for finding small factors
+(say up to 10 decimal digits); for more complicated factorization
+tasks a more powerful algorithm like the quadratic sieve
+\fIqs_factorize\fR should be used
+.nf
+
+    ==> qs_factorize(2**128+1).
+
+.fi
+(Depending on the power of your computer, it will take a few seconds
+up to a few minutes to get a prime factor of the 7th Fermat number.)
+
+.\"---------------------------------------------------------
+.SS Control structures
+The \fIfor\fR loop and the \fIwhile\fR loop in \fBaribas\fR have a syntax
+as in Modula-2. For example, the following command sequence
+calculates the factorial of 100.
+.nf
+
+    ==> x := 1;
+        for i := 2 to 100 do
+            x := x*i;
+        end;
+        x.
+
+.fi
+As you can see in this example, the input may extend over several lines.
+.P
+The above \fIfor\fR loop is equivalent to the following \fIwhile\fR loop
+.nf
+
+    ==> x := 1; i := 2;
+        while i <= 100 do
+            x := x*i;
+            inc(i);
+        end;
+        x.
+
+.fi
+.P
+The branching construct
+.br
+.B if
+.I ...
+.B then
+.I ...
+.B elsif
+.I ...
+.B else
+.I ...
+.B end
+.br
+has also the same syntax as in Modula-2.
+.\"---------------------------------------------------------
+.SS Multiprecision floating point arithmetic
+\fBAribas\fR supports different types of floating point numbers which 
+are internally represented with mantissas of different bit-length:
+.nf
+
+        single_float    32 bits
+        double_float    64 bits
+        long_float     128 bits
+
+.fi
+and several higher precisions up to an implementation dependent 
+limit, typically 1024 or 4096 bits, which can be determined by
+the function \fImax_floatprec()\fR. By default, when
+calculating with numbers of data type \fIreal\fR, single_floats 
+are used. This corresponds to a precision of 9 to 10 decimal places.
+A precision of 4096 bits corresponds to over 1200 decimal places.
+
+The precision can be changed using the function
+\fIset_floatprec\fR. The function takes one integer argument,
+which is the desired precision in bits. It is automatically
+rounded to the next higher available value. For example,
+after
+.nf
+
+    ==> set_floatprec(100).
+    -: 128
+
+.fi
+the floating point precision is 128 bits and you can calculate
+.nf
+
+    ==> arctan(sqrt(3)).
+    -: 1.04719_75511_96597_74615_42144_61093_16762_8
+
+    ==> _/pi.
+    -: 0.33333_33333_33333_33333_33333_33333_33333_33
+
+.fi
+.\"---------------------------------------------------------
+.SS User defined functions
+The user can define his or her own functions. A typical example looks like
+.nf
+
+    ==> function fac(n: integer): integer;
+        var
+            x,i: integer;
+        begin
+            x := 1;
+            for i := 2 to n do
+                x := x*i;
+            end;
+            return x;
+        end.
+
+.fi
+If you have entered this correctly, \fBaribas\fR echoes the function name
+.nf
+
+    -: fac
+
+.fi
+and from now on you can use \fIfac\fR in the same way as a built-in
+function, e.g.
+.nf
+
+    ==> fac(32).
+    -: 2_63130_83693_36935_30167_21801_21600_00000
+ 
+.fi
+Note that inside function definitions all used variables must
+be explicitly declared, whereas on top level of the \fBaribas\fR interpreter
+variables can be simply created by assignments. Here is another example,
+which shows some other data types supported by \fBaribas\fR:
+.nf
+
+    ==> function sqrt_list(n: integer): array of real;
+        var
+            vec: array[n] of real;
+            i: integer;
+        begin
+            for i := 1 to n do
+                vec[i-1] := sqrt(i);
+            end;
+            return vec;
+        end.
+
+.fi
+This function returns an array of the square roots of the integers
+from 1 to n, for example
+.nf
+
+    ==> sqrt_list(10).
+    -: (1.00000000, 1.41421356, 1.73205081, 2.00000000, 
+    2.23606798, 2.44948974, 2.64575131, 2.82842712, 3.00000000, 
+    3.16227766)
+
+.fi 
+In a bigger programming project where you need several functions
+you would not enter them directly at the \fBaribas\fR prompt but
+prepare the function definitions with an external text editor
+and save them in a file  with the extension \fB.ari\fR , for
+example \fBabcd.ari\fR . This file can then be loaded by \fBaribas\fR
+using the command
+.nf
+
+    ==> load("abcd").
+
+.fi
+If there is a syntax error in the file, you get an error message
+of the form
+.nf
+    
+    error in line <= 23 of loaded file
+    if: end expected
+
+.fi
+which tells you (in this example) that there is an error in the \fBif\fR
+construct in line 23 or earlier in the file. (Note that the error 
+messages are sometimes not very precise.) You can then correct the 
+error and load the file again.
+.\"--------------------------------------------------------
+.SS Online help
+The command
+.nf
+
+    ==> symbols(aribas).
+
+.fi
+returns a list of all keywords and names of builtin functions of \fBaribas\fR.
+This list has about 180 entries, and begins and ends as follows:
+.P
+(ARGV, _, __, ___, abs, alloc, and, arccos, arcsin, arctan, arctan2, aribas,
+array, atof, atoi, begin, binary, bit_and, bit_clear, 
+bit_length, ...... , tolower, toupper, transcript, true, trunc, type, 
+user, var, version, while, write, write_block, write_byte, writeln)
+.P
+For most of the symbols in this list, you can get a short online
+help using the function \fIhelp()\fR. For example, the command
+.nf
+
+    ==> help(ARGV).
+
+.fi
+gives an information on the builtin variable \fIARGV\fR, whereas
+.nf
+
+    ==> help(while).
+
+.fi
+describes the syntax of the \fIwhile\fR loop. If you need more information
+than that contained in the online help, consult the documentation
+which can be found in \fI/usr/share/doc/aribas\fR.
+.\"--------------------------------------------------------
+.SS How to exit
+To end an \fBaribas\fR session, type \fIexit\fR at the \fBaribas\fR prompt
+.nf
+
+    ==> exit
+
+.fi
+and then press the RETURN (ENTER) key.
+.P
+If you don't want to leave \fBaribas\fR, but want to break out of an
+infinite loop or a calculation that lasts too long, type
+CONTROL-C (if you are running \fBaribas\fR from within Emacs, you
+must press CONTROL-C twice). This will (in most cases) stop the
+current calculation and return to the \fBaribas\fR prompt.
+.P
+When you are not using the Emacs interface but the command line
+version of \fBaribas\fR, you sometimes get into the 
+following situation: Some previous line contains a typing error,
+but you cannot return to that line to correct it. 
+In this case you should simply type a full stop `\fB.\fR' , 
+followed by RETURN. You will
+get an error message which you can safely ignore, and a new prompt
+\fB==>\fR appears, allowing you to try again.
+.\"--------------------------------------------------------
+.SH COMMAND LINE ARGUMENTS
+.PP
+.B aribas
+[\fIoptions\fR] [<\fIari-file\fR> [<\fIarg1\fR> <\fIarg2\fR> ...]]
+
+.SS options
+The following options are available:
+.TP
+.B -q
+(quiet mode) Suppresses all messages to the screen (version no,
+copyright notice, etc.) when \fBaribas\fR is started
+.TP
+.B -v  
+(verbose mode, default) Does not suppress messages to the screen when
+\fBaribas\fR is started.
+.TP
+.B -c <cols>
+\fBaribas\fR does its own line breaking when writing to the screen.
+Normally it supposes that the screen (or the window in which \fBaribas\fR
+runs) has 80 columns. With the -c option you can set another number,
+which must be between 40 and 160 (in decimal representation).  For
+example, if you run \fBaribas\fR in an Xterm window with 72 columns, use the
+option -c72 (or -c 72, the space between -c and the number is
+optional).
+.TP
+.B -m <mem>
+Here <mem> is a number (in decimal representation) between 64 and
+16000. This number indicates how many Kilobytes of RAM \fBaribas\fR should
+use for the \fBaribas\fR heap. The default value depends on the options used
+when \fBaribas\fR was compiled. Typically, under UNIX or LINUX it is 6
+Megabytes, corresponding to -m6000
+.TP
+.B -h <path of help file>
+The online help of \fBaribas\fR depends on a file aribas.hlp which should be
+situated  in the range of the environment variable PATH. If this is not
+the case you can specify the exact path of the help file with the -h
+option. If for example the file aribas.hlp is in the directory
+/usr/local/lib, use the option -h /usr/local/lib (the space after -h
+is not necessary).  The -h option can also be used if the help file
+has a different name. If the help file is named help-aribas and lies
+in the directory /home/joe/ari, use -h/home/joe/ari/help-aribas.
+
+With a properly installed Debian package of \fBaribas\fR it should
+not be necessary to use this option.
+.TP
+.B -p <ari-search-path>
+With this option you can specify a search path for loading files with
+\fBaribas\fR source code. <ari-search-path> may be either the
+(absolute) pathname of one directory or several pathnames separated by
+colons.  Suppose that you have called \fBaribas\fR with the option
+
+	-p/usr/local/lib/aribas:~/ari/examples 
+
+and that your home directory is /home/alice/. Then the command
+
+	==> load("factor").
+
+will search the file factor.ari first in the current directory,
+then in the directory /usr/local/lib/aribas and finally in
+/home/alice/ari/examples.
+
+.TP
+.B -b
+Batch mode when loading an \fBaribas\fR source code file from
+the command line, see below.
+
+.P
+One letter options which require no arguments may be merged,
+for example
+
+    aribas -q -b
+
+is equivalent to
+
+    aribas -qb
+
+.\"---------------------------------------------------------
+.SS Further command line arguments
+.TP
+.B <ari-file>
+The next command line argument after the options is interpreted
+as the name of a file with \fBaribas\fR source code. If the file name
+has the extension .ari, this extension may be omitted. The file
+is loaded as if the command \fIload("<ari-file>")\fR had been given
+after the start of \fBaribas\fR at the \fBaribas\fR prompt. If the file is 
+not found in the current directory it is searched in the 
+directories specified by the -p option.
+If the option -b was given, the file is loaded and executed.
+Afterwards \fBaribas\fR exits without showing it's prompt. If
+the file cannot be loaded completely because of an error,
+\fBaribas\fR exits immediately after the error message.
+.TP
+.B <arg1> <arg2> ...
+When further command line arguments follow \fI<ari-file>\fR, they
+are collected (as strings) together with \fI<ari-file>\fR in the vector 
+\fIARGV\fR which can be accessed from within \fBaribas\fR.
+Example: If you call \fBaribas\fR with the command line
+
+	aribas startup 4536 eisenstein
+
+and the current directory contains the file startup.ari, then
+\fBaribas\fR loads it and the vector \fIARGV\fR has the form
+.nf
+
+    ==> ARGV.
+    -: ("startup", "4536", "eisenstein")
+
+.fi
+If you need some arguments as numbers and not as strings, you can
+transform them by \fIatoi\fR (or \fIatof\fR); 
+in our example
+.nf
+
+    ==> x := atoi(ARGV[1]).
+    -: 4536
+
+.fi
+will do it. The length of the vector \fIARGV\fR can be determined by
+\fIlength(ARGV)\fR.
+.\"-------------------------------------------------------------
+.SH RUNNING ARIBAS WITHIN EMACS
+
+You can run \fBaribas\fR from within Emacs by giving the command
+(in Emacs' minibuffer)
+.nf
+
+  	M-x run-aribas
+
+.fi
+(If you don't have a META key, use ESC x instead of M-x)
+Then \fBaribas\fR will be loaded into an Emacs window with name 
+*aribas* and you can edit your input to \fBaribas\fR with the usual
+Emacs commands.
+.P
+If your input ends with a full stop '.' and you press RETURN,
+it is sent to \fBaribas\fR.
+If however your complete input does not end with a full stop,
+(for example in response to a \fIreadln\fR), the input is sent 
+to \fBaribas\fR by C-j (Control-j) or C-c RETURN.
+.P
+If you want to repeat a previous input, M-p (or ESC p) cycles backward
+through input history, and M-n (or ESC n) cycles forward.
+.P
+A Control-C is sent to \fBaribas\fR by C-c C-c (press C-c twice).
+.P
+It is also possible to start \fBaribas\fR from Emacs with
+command line arguments. For this purpose the command
+.nf
+
+  	C-u M-x run-aribas
+
+.fi
+has to be given. Then a prompt
+.nf
+
+  	run-aribas: aribas
+
+.fi
+appears in the Minibuffer of Emacs and you can complete the
+command line, for example
+.nf
+
+  	run-aribas: aribas startup 4536 eisenstein
+
+.fi
+(see above).
+.\"-------------------------------------------------------------
+.SH CONFIGURATION FILE
+
+Options for running \fBaribas\fR can be specified also using a 
+configuration file with name \fB.arirc\fR. 
+\fBAribas\fR searches for a configuration file in the
+following order:
+
+    1) the current directory
+    2) the home directory of the user
+
+There is a third possibility: You can define an environment variable
+\fBARIRC\fR containing the name of the configuration file (which may be
+different from .arirc), including the full path.
+
+In the configuration file you can specify all command line options
+described above which begin with a - sign, however a separate
+line must be used for every single option. Lines beginning with
+the character # or empty lines are ignored.
+In addition to the options described above, the configuration
+file may contain \fBaribas\fR source code. For this purpose there
+must be a line reading
+
+.B -init
+
+Then everything after this line is treated as \fBaribas\fR source code
+and executed when \fBaribas\fR is started.
+
+The existence of a configuration file for \fBaribas\fR does not exclude
+the possibility to give command line arguments. If an option
+(e.g. the -m option) is specified both in the configuration file
+and the command line but with different values, then the 
+specification at the command line is valid. Analogously, a -v
+option on the command line overrides a -q option in the configuration
+file.
+If there is -init code in the configuration file and an <ari-file>
+argument at the command line, then the -init code is executed first 
+and afterwards the <ari-file> is loaded and its code executed.
+
+.SH FILES
+.TP
+.B $ARIRC,  .arirc, $HOME/.arirc
+
+Optional configuration file.
+
+.SH ENVIRONMENT VARIABLES
+.TP
+.B $ARIRC
+Location of the optional configuration file.
+
+.SH SEE ALSO
+.BR emacs (1)
+.P
+More information on how to use \fBaribas\fR 
+can be found in \fI/usr/share/doc/aribas\fR.
+.P
+The \fBaribas\fR home page is
+\fIhttp://www.mathematik.uni-muenchen.de/~forster/sw/aribas.html\fR.
+.\"-------------------------------------------------------------
+.SH BUGS
+Bug reports should be sent by email to
+
+    forster@mathematik.uni-muenchen.de
+
+.SH AUTHOR
+Otto Forster <forster@mathematik.uni-muenchen.de> is the author of
+the aribas program. This man page was compiled by Ralf Treinen
+<treinen@debian.org> from the aribas documentation for the Debian
+package of aribas, and supplemented by the author.
+

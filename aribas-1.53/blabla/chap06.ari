@@ -1,0 +1,70 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 6
+** Der Restklassenring Z/mZ
+*)
+(*---------------------------------------------------------*)
+(*
+** M ist ein Array ganzer Zahlen, die als positiv und
+** paarweise teilerfremd vorausgesetzt werden.
+** Die Funktion chin_arr ordnet einer ganzen Zahl x
+** das Array der Restklassen modulo den Komponenten von M zu
+*)
+function chin_arr(x: integer; M: array): array;
+var
+    X: array[length(M)];
+    i: integer;
+begin
+    for i := 0 to length(M)-1 do
+        X[i] := x mod M[i];
+    end;
+    return X;
+end;
+(*---------------------------------------------------------*)
+(*
+** Umkehrfunktion von chin_arr
+** Die Komponenten des Arrays M muessen positiv
+** und paarweise teilerfremd sein
+*)
+function chin_inv(X, M: array): integer;
+var
+    m, m1, i, z: integer;
+begin
+    m := product(M);
+    z := 0;
+    for i := 0 to length(M)-1 do
+        m1 := m div M[i];
+        z := z + X[i] * m1 * mod_inverse(m1,M[i]);
+    end;
+    return z mod m;
+end;
+(*---------------------------------------------------------*)
+(*
+** Komponentenweise Addition zweier Arrays X,Y modulo M
+*)
+function arr_add(X,Y,M: array): array;
+var
+    i: integer;
+begin
+    for i := 0 to length(X)-1 do
+        X[i] := (X[i] + Y[i]) mod M[i];
+    end;
+    return X;
+end;
+(*---------------------------------------------------------*)
+(*
+** Komponentenweise Multiplikation zweier Arrays X,Y modulo M
+*)
+function arr_mult(X,Y,M: array): array;
+var
+    i: integer;
+begin
+    for i := 0 to length(X)-1 do
+        X[i] := (X[i] * Y[i]) mod M[i];
+    end;
+    return X;
+end;
+(*---------------------------------------------------------*)

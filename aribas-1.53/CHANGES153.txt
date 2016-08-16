@@ -1,0 +1,89 @@
+File CHANGES.TXT
+
+ARIBAS interpreter for Arithmetic, V1.53, November 2004
+Copyright (C) O.Forster 1996-2004 <forster@mathematik.uni-muenchen.de>
+WWW:	http://www.mathematik.uni-muenchen.de/~forster
+
+Changes from former versions of ARIBAS to the present version:
+
+V 1.50 to 1.53 (Nov. 2004)
+-   bug fix in handling of -pi (previous version changed constant pi)
+-   bug fix in division of integer vectors with negative coefficients
+-   for loop can now handle >= 2**32 iterations
+-   fixed bug which occurred in V 1.50 while parsing certain
+    parenthized expressions
+
+V 1.40 to V1.50 (Aug. 2004)
+-   direct support for GF(2**n); data type gf2nint,
+      functions gf2n_init, gf2n_fieldpol, gf2n_degree,
+      gf2n_trace, max_gf2nsize
+-   new function gfp_sqrt
+-   removed a bug in integer division
+-   new function ec_factorize
+-   improved performance of qs_factorize (less unsuccessfull
+        factorizations, thanks to Lew Baxter for testing)
+
+V1.30 (March 2002) to V1.40 (June 2003)
+-   simultaneous assignments
+        (x1,x2,...,xn) := (a1,a2,...,an)
+-   new functions 
+        divide, bit_count,
+        set_workdir, get_workdir, gmtime,
+        stack2string, stack_arraypush, string_scan,
+        realloc, binsearch
+-   some bug fixes (regarding qs_factorize and
+	    handling of special variable and value arguments
+        in user defined functions)
+
+V1.20b (June 2001) to V1.30 (March 2002)
+-   vector operations:
+        vec + vec, lambda * vec, vec * lambda,
+        intvec mod N, intvec div N, gcd(intvec)
+-   some small bugfixes
+-   fixed bug occuring in special situations when reading comments
+
+V1.14 (April 1999) to V1.20b (June 2001)
+-   flush(transcript)
+-   floating point precision can be set up to 4096 bits (over
+    1200 decimal places); former limit was 192 bits
+-   bugfix in function mem_byteswap()
+-   make_unbound(user) unbinds all user defined functions
+-   new function max_intsize(); returns maximal number 
+    of decimal places of an integer
+
+V1.08b (Nov. 1997) to V1.14 (April 1999)
+-   since V1.13 there is now a (preliminary) version of ARIBAS
+    for MS-Windows 95/98/NT
+-   function load in UNIX versions of ARIBAS now accepts also 
+    .ari files with DOS line endings
+-   silent version of functions rho_factorize, cf_factorize,
+    qs_factorize, next_prime with last argument 0.
+-   new builtin function next_prime 
+    next_prime(x) calculates the smallest prime p >= x
+-   new builtin function qs_factorize (factorization with
+    quadratic sieve method, faster than cf_factorize; on a 
+    Pentium PC 233MHz, the seventh Fermat numbers is factorized
+    in a few seconds)
+-   continue statement in for and while loops (works as in C)
+
+V1.07 (April 1997) to V1.08b (Nov. 1997)
+
+-   fixed bug in factorial(n) for n=0,1
+-   readln() can now read big integers which extend over several lines
+-   new command line option -b (batch mode):
+        aribas -b tt.scr
+    starts ARIBAS, loads file "tt.scr" which is supposed to contain
+    ARIBAS code, executes it, and then exits.
+
+V1.00 (Sep. 1996) to V1.07 (April 1997)
+
+-   new functions version() and max_arraysize()
+-   function protocol() renamed to transcript()
+-   new command line options -h (help path) and -p (ari path)
+-   (versions for 80[3-5]86 processor) small speedup in big integer arithmetic
+-   (MSDOS version) changed memory management for function system()
+-   bugfix in function random()
+
+(************************** EOF ******************************)
+
+

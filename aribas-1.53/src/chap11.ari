@@ -1,0 +1,35 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 11
+** Quadratische Reste, quadratisches Reziprozitaetsgesetz
+*)
+(*-------------------------------------------------------------*)
+function jac(x,y: integer): integer;
+var
+    m8, temp, res: integer;
+begin
+    if y < 3 or even(y) then
+        writeln("jac(x,y): y must be an odd integer >= 3");
+        return 0;
+    end;
+    res := 1;
+    while true do    (* Schleifeninvariante res*jac(x,y) *)
+        x := x mod y;
+        if x = 0 then return 0; end;
+        while even(x) do    (* 2. Ergaenzungssatz *)
+            x := x div 2;
+            m8 := y mod 8;
+            if (m8 = 3) or (m8 = 5) then res := -res; end;
+        end;
+        if x = 1 then return res; end;
+        temp := x; x := y; y := temp;
+        (* vertausche x,y; Reziprozitaetsgesetz *)
+        if (x mod 4 = 3) and (y mod 4 = 3) then
+            res := -res;
+        end;
+    end;
+end;
+(*-------------------------------------------------------------*)

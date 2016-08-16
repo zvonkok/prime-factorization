@@ -1,0 +1,224 @@
+(************************************************************)
+(*
+** Otto Forster: Algorithmische Zahlentheorie
+** Vieweg-Verlag 1996, ISBN 3-528-06580-X
+**
+** ARIBAS-Code zu Paragraph 22
+** Faktorisierung mit Kettenbruechen
+*)
+(*-------------------------------------------------------*)
+(*
+** Implementierung des Faktorisierungs-Verfahrens
+** von Brillhardt-Morrison
+**
+** Beispiel-Aufruf: MB_factorize(10**17 div 9).
+**
+** Bemerkung: Das Faktorisierungs-Verfahren gibt es auch
+** als effizientere eingebaute ARIBAS-Funktion unter
+** dem Namen cf_factorize
+*)
+(*-------------------------------------------------------*)
+(* Benoetigte globale Variablen *)
+var
+    Mat: array of byte_string;
+    Pivot,Factorbase,Qvec,Uvec: array of integer;
+    Len,CurRow,Count: integer;
+end;
+(*-------------------------------------------------------*)
+(*
+** Faktorisiert die Zahl N nach dem Algorithmus von
+** Brillhardt-Morrison. N darf keine Primzahl sein
+** und sollte keine kleinen Primfaktoren enthalten.
+** Das optionale Argument multip kann mit einem Wert /= 1
+** verwendet werden, wenn MB_factorize(N) scheitert,
+** weil die Periode des Kettenbruchs von sqrt(N) zu kurz ist.
+*)
+function MB_factorize(N: integer; multip := 1): integer;
+var
+    a, w, q, q0, q1, m, m1, u, u0, u1, sign: integer;
+    mN, D: integer;
+begin
+    mN := N*multip; MB_initialize(mN);
+    w := isqrt(mN); q := mN - w*w;
+    if q=0 then return gcd(N,w) end;
+    q0 := 1; m := w; u0 := 1; u := m;
+    sign := -1;
+    while q /= 1 do
+        D := nextrow(N,u,q,sign);
+        if D > 0 then return D end;
+        a := (m + w) div q;
+        m1 := a*q - m; q1 := q0 + a*(m - m1);
+        u1 := (a*u + u0) mod N;
+        m := m1; q0 := q; q := q1; u0 := u; u := u1;
+        sign := -sign;
+    end;
+    return 0;
+end;
+(*-------------------------------------------------------*)
+(* initialisiert die globalen Variablen *)
+
+function MB_initialize(N: integer);
+external
+    Mat: array of byte_string;
+    Pivot, Factorbase, Uvec, Qvec: array;
+    Len, CurRow, Count: integer;
+var
+    i,p,j: integer;
+    bb: byte_string;
+begin
+    Len := max(8,bit_length(N)**2 div 40);
+    CurRow := 0; Count := 0;
+    bb := alloc(byte_string,(Len div 4)+1);
+    Mat := alloc(array,Len+1,bb);
+    Pivot := alloc(array,Len);
+    for i := 0 to Len-1 do Pivot[i] := i end;
+    Uvec := alloc(array,Len+1);
+    Qvec := alloc(array,Len+1);
+    Factorbase := make_factorbase(N,Len);
+end;
+(*-------------------------------------------------------*)
+(* Berechnung der Faktorbasis *)
+
+function make_factorbase(N,len: integer): array;
+var
+    i,j,p: integer;
+    fb: array[len];
+begin
+    fb[0] := -1; fb[1] := 2;
+    p := 3;
+    for i := 2 to length(fb)-1 do
+        while factor16(p) or jacobi(N,p) /= 1 do inc(p,2) end;
+        fb[i] := p;
+        inc(p,2);
+    end;
+    return fb;
+end;
+(*-------------------------------------------------------*)
+(*
+** nextrow wird von MB_factorize nach jedem Schritt in der
+** Kettenbruch-Entwicklung von sqrt(N) aufgerufen
+*)
+function nextrow(N,u,q,sign: integer): integer;
+external
+    Mat: array of byte_string;
+    Uvec, Qvec: array;
+    Len, CurRow, Count: integer;
+var
+    UQ: array[2] of array;
+    rel: array;
+    D: integer;
+begin
+    inc(Count);
+    if not trialdiv(q,sign) then return 0 end;
+    Uvec[CurRow] := u; Qvec[CurRow] := q;
+    if gausselim(CurRow) = 0 then
+        inc(CurRow); write('.');
+        return 0;
+    else
+        write('!');
+        UQ := getUQ(CurRow);
+        D := findfactor(N,UQ[0],UQ[1]);
+        if D > 0 then
+            writeln(); write("factor found after ");
+            writeln(Count," steps (",CurRow+1,"/",Len,")");
+        end;
+        return D;
+    end;
+end;
+(*-------------------------------------------------------*)
+(* versucht q mit der Faktorbasis komplett zu faktorisieren *)
+
+function trialdiv(q,sign: integer): boolean
+external
+    Mat: array of byte_string;
+    Factorbase: array;
+    Len, CurRow: integer;
+var
+    i, m, p: integer;
+begin
+    mem_xor(Mat[CurRow],Mat[CurRow]);
+    if sign < 0 then mem_bset(Mat[CurRow],0) end;
+    for i := 1 to Len-1 do
+        p := Factorbase[i];
+        m := 0;
+        while q mod p = 0 do
+            q := q div p; inc(m);
+        end;
+        if odd(m) then mem_bset(Mat[CurRow],i) end;
+        if q = 1 then
+            mem_bset(Mat[CurRow],Len+CurRow);
+            return true;
+        end;
+    end;
+    return false;
+end;
+(*-------------------------------------------------------*)
+(*
+** Ein Schritt im Gaussschen Eliminations-Verfahren
+** f"ur die Bit-Matrix (globale Variable) Mat
+*)
+function gausselim(k: integer): integer;
+external
+    Mat: array of byte_string;
+    Pivot: array;
+var
+    i,j,j0: integer;
+begin
+    for i := 0 to k-1 do
+        if mem_btest(Mat[k],Pivot[i]) then
+            mem_xor(Mat[k],Mat[i]);
+        end;
+    end;
+    for i := k to length(Pivot)-1 do
+        j := Pivot[i];
+        if mem_btest(Mat[k],j) then
+            j0 := Pivot[k]; Pivot[k] := j; Pivot[i] := j0;
+            return 0;
+        end;
+    end;
+    return 1;
+end;
+(*-------------------------------------------------------*)
+(* Stellt die U- und Q-Arrays fuer findfactor bereit *)
+
+function getUQ(row: integer): array[2] of array;
+external
+    Mat: array of byte_string;
+    Uvec, Qvec: array;
+    Len: integer;
+var
+    stU, stQ: stack;
+    i: integer;
+begin
+    for i := 0 to row do
+        if mem_btest(Mat[row],Len+i) then
+            stack_push(stU,Uvec[i]);
+            stack_push(stQ,Qvec[i]);
+        end;
+    end;
+    return (stack2array(stU), stack2array(stQ));
+end;
+(*-------------------------------------------------------*)
+(*
+** product(Q) muss eine Quadratzahl sein die modulo N
+** gleich dem Quadrat von product(U) ist.
+** Die Funktion versucht aus dieser Kongruenz
+** einen Faktor von N zu berechnen.
+*)
+function findfactor(N: integer; U,Q: array): integer
+var
+    i,u,q,qroot,d: integer;
+begin
+    u := U[0]; q := Q[0]; qroot := 1;
+    for i := 1 to length(U)-1 do
+        u := (u * U[i]) mod N;
+        d := gcd(q,Q[i]);
+        q := (q div d) * (Q[i] div d);
+        qroot := (qroot * d) mod N;
+    end;
+    qroot := (qroot*isqrt(q)) mod N;
+    d := gcd(qroot+u,N);
+    if d <= 1 or d = N then d := 0 end;
+    return d;
+end;
+(*---------------------------------------------------------*)
