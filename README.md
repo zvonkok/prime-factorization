@@ -1,13 +1,11 @@
-** Research and Development of Prime-Factorization Algorithms
-*** Division, Fermat, Pollard-Rho, Williams, Elliptic-Curve, Quadratic-Sieve
+**Research and Development of Prime-Factorization Algorithms**
+***Division, Fermat, Pollard-Rho, Williams, Elliptic-Curve, Quadratic-Sieve***
 
-**Untersuchung und Implementierung von Algorithmen zur Zerlegung großer
-Zahlen**\
+**Untersuchung und Implementierung von Algorithmen zur Zerlegung großer Zahlen**
 
-**Primfaktorzerlegung&lt
-**
+**Primfaktorzerlegung**
 
-**Studienarbeit**\
+**Studienarbeit** 
 im Fachbereich Informationstechnik\
 Studiengang Softwaretechnik\
 der\
