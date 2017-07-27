@@ -1,7 +1,10 @@
+** Research and Development of Prime-Factorization Algorithms
+*** Division, Fermat, Pollard-Rho, Williams, Elliptic-Curve, Quadratic-Sieve
+
 **Untersuchung und Implementierung von Algorithmen zur Zerlegung großer
 Zahlen**\
 
-**&gt;&gt;Primfaktorzerlegung&lt;&lt;\
+**Primfaktorzerlegung&lt
 **
 
 **Studienarbeit**\
@@ -10,9 +13,7 @@ Studiengang Softwaretechnik\
 der\
 Fachhochschule für Technik Esslingen\
 
-**Zvonko Krnjajic**\
-
-723923
+**Zvonko Kosic (Krnjajic)**\
 
 <span>ll</span> Betreuer: & Prof. Dr. Ing. Reinhardt Schmidt\
 Bearbeitungszeitraum: & 28.03.2005 bis 15.06.2005
